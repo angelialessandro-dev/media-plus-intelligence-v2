@@ -89,3 +89,5 @@ CATEGORY_LABELS = {
 
 # ── OUTPUT ────────────────────────────────────────────────────────────────────
 LOG_PATH = "data/intelligence.log"
+
+CITIES = TARGET_CITIES
