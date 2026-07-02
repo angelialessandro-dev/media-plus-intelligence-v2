@@ -141,7 +141,7 @@ NEWSPAPER_CONFIGS = {
         ],
     },
     "Trentino": {
-        "rss": "https://www.giornaletrentino.it/rss.xml",
+        "rss": "https://www.giornaletrentino.it/economia",
         "fallback_sections": [
             "https://www.giornaletrentino.it/economia",
         ],
