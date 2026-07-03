@@ -101,6 +101,17 @@
   .listino-section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 18px 0 10px; border-top: 1px solid var(--border); margin-top: 8px; display: flex; align-items: center; justify-content: space-between; }
   .btn-add-price { padding: 4px 12px; border-radius: 6px; border: 1px dashed var(--border); background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; font-family: inherit; }
   .btn-add-price:hover { border-color: var(--accent); color: var(--accent); }
+  /* ── SEARCH DROPDOWN ── */
+  .search-wrap { position: relative; }
+  .search-dropdown { position: absolute; top: calc(100% + 6px); right: 0; width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 200; overflow: hidden; display: none; }
+  .search-dropdown.open { display: block; }
+  .search-res-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .search-res-item:last-child { border-bottom: none; }
+  .search-res-item:hover { background: var(--surface2); }
+  .search-res-icon { font-size: 14px; flex-shrink: 0; }
+  .search-res-label { font-size: 13px; font-weight: 600; }
+  .search-res-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .search-res-type { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; padding: 6px 14px 4px; background: var(--bg); }
 
   /* ── TOPBAR ── */
   .logo { font-weight: 700; font-size: 19px; letter-spacing: -.3px; color: var(--text); cursor: pointer; }
@@ -277,7 +288,8 @@
     <div class="logo" id="main-logo" style="cursor:pointer">Media Plus <span>Intelligence</span></div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;position:relative">
       <div class="search-wrap" id="search-bar">
-        <input type="text" id="search-input" class="search-input" placeholder="Cerca azienda, segnale…">
+        <input type="text" id="search-input" class="search-input" placeholder="Cerca azienda, fonte…">
+        <div class="search-dropdown" id="search-dropdown"></div>
       </div>
       <button class="topbar-icon-btn" id="search-icon-btn" title="Cerca">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
@@ -722,77 +734,113 @@
   document.getElementById('user-btn').addEventListener('click', e => {
     e.stopPropagation();
     document.getElementById('user-menu').classList.toggle('open');
-    document.getElementById('search-bar').classList.remove('open');
+    if(typeof closeSearch === 'function') closeSearch();
   });
   document.getElementById('search-icon-btn').addEventListener('click', e => {
     e.stopPropagation();
-    document.getElementById('search-bar').classList.toggle('open');
+    const bar = document.getElementById('search-bar');
+    bar.classList.toggle('open');
     document.getElementById('user-menu').classList.remove('open');
-    if(document.getElementById('search-bar').classList.contains('open'))
-      document.getElementById('search-input').focus();
+    if(bar.classList.contains('open')) document.getElementById('search-input').focus();
+    else closeSearch();
   });
 
-  // Search input handler
-  const searchInput = document.getElementById('search-input');
+  // Lista fonti per autocomplete
+  const ALL_SOURCES = [
+    'Google News TN/BZ','Google News Nazionale','ANSA Trentino',
+    "L'Adige",'Alto Adige','Il Dolomiti','Il T Quotidiano',
+    'Trentino TV','Alto Adige TV','RTTR','TV33',
+    'Radio Dolomiti','Radio Adige',
+    'Camera di Commercio TN','CCIAA Bolzano',
+  ];
+
+  function getSearchSuggestions(query){
+    if(!query || query.length < 2) return [];
+    const q = query.toLowerCase();
+    const results = [];
+    // Aziende dai movers
+    movers.filter(m => m.name.toLowerCase().includes(q)).slice(0,5).forEach(m=>{
+      results.push({type:'azienda', icon:'🏢', label:m.name, sub:m.source||m.sector||'', obj:m});
+    });
+    // Fonti
+    ALL_SOURCES.filter(s => s.toLowerCase().includes(q)).slice(0,3).forEach(s=>{
+      results.push({type:'fonte', icon:'📡', label:s, sub:'Fonte'});
+    });
+    return results.slice(0,8);
+  }
+
+  function renderDropdown(suggestions, query){
+    const dd = document.getElementById('search-dropdown');
+    if(!suggestions.length){ dd.classList.remove('open'); return; }
+    let html = '';
+    let lastType = '';
+    suggestions.forEach(s => {
+      if(s.type !== lastType){
+        html += `<div class="search-res-type">${s.type === 'azienda' ? 'Aziende' : 'Fonti'}</div>`;
+        lastType = s.type;
+      }
+      const hi = s.label.replace(new RegExp(`(${escHtml(query)})`, 'gi'), '<strong>$1</strong>');
+      html += `<div class="search-res-item" data-type="${s.type}" data-label="${escHtml(s.label)}">
+        <span class="search-res-icon">${s.icon}</span>
+        <div><div class="search-res-label">${hi}</div><div class="search-res-sub">${escHtml(s.sub)}</div></div>
+      </div>`;
+    });
+    dd.innerHTML = html;
+    dd.classList.add('open');
+
+    dd.querySelectorAll('.search-res-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const type  = item.dataset.type;
+        const label = item.dataset.label;
+        closeSearch();
+        if(type === 'azienda'){
+          const m = movers.find(m => m.name === label);
+          if(m) showCompanyCenter(m, 'Ricerca');
+        } else {
+          // Filtra feed per quella fonte
+          currentSourceFilter = label;
+          currentCatFilter = null;
+          currentSignalPage = 1;
+          document.getElementById('feed-title').textContent = label;
+          document.getElementById('scheda-tabs').style.display = 'flex';
+          currentMezzoName = label;
+          // mostra/nasconde tab mezzo in base alla categoria
+          const srcItem = [...document.querySelectorAll('.src-item')].find(el => el.querySelector('.src-name')?.textContent.trim() === label);
+          const cat = srcItem?.dataset.category || '';
+          const hasMedia = ADVERTISING_CATEGORIES.has(cat);
+          document.getElementById('stab-mezzo').style.display   = hasMedia ? '' : 'none';
+          document.getElementById('stab-listino').style.display  = hasMedia ? '' : 'none';
+          showFeedCenter();
+        }
+      });
+    });
+  }
+
+  function closeSearch(){
+    document.getElementById('search-bar').classList.remove('open');
+    document.getElementById('search-dropdown').classList.remove('open');
+    document.getElementById('search-input').value = '';
+  }
+
   let searchTimeout = null;
-  searchInput.addEventListener('input', function(){
+  document.getElementById('search-input').addEventListener('input', function(){
     clearTimeout(searchTimeout);
     const q = this.value.trim();
-    if(q.length < 2){ return; }
-    searchTimeout = setTimeout(() => performSearch(q), 400);
+    if(q.length < 2){ document.getElementById('search-dropdown').classList.remove('open'); return; }
+    searchTimeout = setTimeout(() => renderDropdown(getSearchSuggestions(q), q), 200);
   });
-  searchInput.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){
-      clearTimeout(searchTimeout);
-      performSearch(this.value.trim());
-    }
-    if(e.key === 'Escape'){
-      document.getElementById('search-bar').classList.remove('open');
-      this.value = '';
-    }
+  document.getElementById('search-input').addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeSearch();
   });
-
-  async function performSearch(query){
-    if(!query) return;
-    // Cerca nell'API i segnali che corrispondono alla query
-    const url = `${API}/api/signals?period=all&limit=20&order_by=detected_at&company=${encodeURIComponent(query)}`;
-    try {
-      const r = await fetch(url);
-      const data = await r.json();
-      const signals = data.signals || [];
-
-      // Aggiorna il feed con i risultati
-      document.getElementById('feed-title').textContent = `Ricerca: "${query}"`;
-      document.getElementById('feed-count').textContent = signals.length + ' risultati';
-
-      // Nascondi tab scheda e mostra feed
-      document.getElementById('scheda-tabs').style.display = 'none';
-      currentCatFilter = null;
-      currentSourceFilter = null;
-
-      const container = document.getElementById('signals-container');
-      if(signals.length === 0){
-        container.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px">Nessun risultato per "<strong>'+escHtml(query)+'</strong>".</div>';
-      } else {
-        container.innerHTML = signals.map(renderSignalCard).join('');
-      }
-
-      // Chiudi la search bar e mostra il feed
-      document.getElementById('search-bar').classList.remove('open');
-      document.getElementById('search-input').value = '';
-      showFeedCenter();
-
-      // Se c'è un solo risultato e il nome corrisponde esattamente, apri la scheda azienda
-      if(signals.length > 0){
-        const exactMatch = movers.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
-        if(exactMatch){
-          showCompanyCenter(exactMatch, `Ricerca: "${query}"`);
-        }
-      }
-    } catch(e){
-      console.warn('Search error:', e.message);
-    }
-  }
+  document.addEventListener('click', () => {
+    document.getElementById('user-menu').classList.remove('open');
+    const bar = document.getElementById('search-bar');
+    if(!bar.contains(event.target)) closeSearch();
+    const wrap = document.getElementById('cal-picker-wrap');
+    if(wrap) wrap.classList.remove('open');
+    const cvWrap = document.getElementById('cv-cal-wrap');
+    if(cvWrap) cvWrap.classList.remove('open');
+  });
   document.addEventListener('click', () => {
     document.getElementById('user-menu').classList.remove('open');
     document.getElementById('search-bar').classList.remove('open');
