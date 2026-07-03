@@ -588,7 +588,8 @@
   async function loadSignals(){
     const container = document.getElementById('signals-container');
     const pagDiv    = document.getElementById('feed-pagination');
-    if(!container) return;
+    console.log('[signals] container:', !!container, 'view-feed display:', document.getElementById('view-feed')?.style.display);
+    if(!container) { console.warn('[signals] container not found'); return; }
 
     container.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px">Caricamento segnali…</div>';
     if(pagDiv) pagDiv.style.display='none';
@@ -602,12 +603,15 @@
     let url = `${API}/api/signals?period=${p}&limit=${SIGNALS_PER_PAGE}&offset=${offset}&order_by=${ob}`;
     if(currentCatFilter)    url += `&category=${encodeURIComponent(currentCatFilter)}`;
     if(currentSourceFilter) url += `&source=${encodeURIComponent(currentSourceFilter)}`;
+    console.log('[signals] fetching:', url);
 
     try {
       const r = await fetch(url);
+      console.log('[signals] response:', r.status);
       if(!r.ok) throw new Error(r.status);
       const data = await r.json();
       const signals = data.signals||[];
+      console.log('[signals] received:', signals.length, 'signals');
 
       if(signals.length===0){
         container.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px">Nessun segnale in questo periodo.<br><small style="color:var(--border)">Il crawler gira ogni 60 minuti — riprova tra poco.</small></div>';
@@ -615,10 +619,12 @@
         return;
       }
 
-      container.innerHTML = signals.map(renderSignalCard).join('');
+      const html = signals.map(renderSignalCard).join('');
+      console.log('[signals] rendered html len:', html.length);
+      container.innerHTML = html;
+      console.log('[signals] container innerHTML len after set:', container.innerHTML.length);
       document.getElementById('feed-count').textContent = data.count+(data.count===1?' segnale':' segnali');
 
-      // Pagination
       const totalPages = Math.ceil((data.count||signals.length)/SIGNALS_PER_PAGE);
       if(totalPages>1 && pagDiv){
         pagDiv.style.display='flex';
@@ -631,7 +637,7 @@
         pagDiv.innerHTML = pages;
       }
     } catch(e){
-      console.warn('loadSignals error:',e.message);
+      console.error('[signals] ERROR:', e);
       container.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--muted)">Errore nel caricamento. Riprova.</div>';
     }
   }
