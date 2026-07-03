@@ -795,8 +795,19 @@
         const label = item.dataset.label;
         closeSearch();
         if(type === 'azienda'){
-          const m = movers.find(m => m.name === label);
-          if(m) showCompanyCenter(m, 'Ricerca');
+          let m = movers.find(m => m.name === label);
+          if(!m){
+            // Crea un placeholder se non trovato nei movers (nomi potrebbero differire)
+            m = {
+              name: label, source: 'Varie fonti',
+              series: [50,52,55,58,60,62,64,66,68,70,72,75],
+              data: {
+                '1D':{pct:0,spend:0},'7D':{pct:0,spend:0},'1M':{pct:0,spend:0},
+                '6M':{pct:0,spend:0},'1A':{pct:0,spend:0},'CUSTOM':{pct:0,spend:0}
+              }
+            };
+          }
+          showCompanyCenter(m, 'Ricerca');
         } else {
           // Filtra feed per quella fonte
           currentSourceFilter = label;
