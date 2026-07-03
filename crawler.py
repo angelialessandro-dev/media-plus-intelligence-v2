@@ -141,9 +141,9 @@ NEWSPAPER_CONFIGS = {
         ],
     },
     "Trentino": {
-        "rss": "https://www.giornaletrentino.it/economia",
+        "rss": "https://www.giornaletrentino.it/feed",
         "fallback_sections": [
-            "https://www.giornaletrentino.it/economia",
+            "https://www.giornaletrentino.it/feed",
         ],
     },
 }
@@ -196,8 +196,8 @@ CCIAA_FEEDS = {
         "https://www.tn.camcom.it/it/notizie/rss",
     ],
     "CCIAA BZ": [
-        "https://www.bz.camcom.it/it/comunicati-stampa/rss",
-        "https://www.bz.camcom.it/it/notizie/rss",
+        "https://www.camcom.bz.it/it/notizie/rss",
+        "https://www.camcom.bz.it/it/comunicati-stampa/rss",
     ],
 }
 
