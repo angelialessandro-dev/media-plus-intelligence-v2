@@ -296,18 +296,18 @@
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label" style="margin-top:14px">Fonti attive</div>
-      <div class="src-item active">
+      <div class="src-item active" data-category="all">
         <div class="src-icon">📡</div>
         <span class="src-name">Tutti i segnali</span>
         <span class="src-count">47</span>
       </div>
       <div class="sidebar-label clickable" style="margin-top:14px" data-group="Online news">Online news</div>
-      <div class="src-item">
+      <div class="src-item" data-category="online_news">
         <div class="src-dot green"></div>
         <span class="src-name">Google News TN/BZ</span>
         <span class="src-count">18</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="online_news">
         <div class="src-dot green"></div>
         <span class="src-name">Google News Nazionale</span>
         <span class="src-count">4</span>
@@ -316,17 +316,17 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label clickable" data-group="Giornali online/offline">Giornali online/offline</div>
-      <div class="src-item">
+      <div class="src-item" data-category="giornali">
         <div class="src-dot green"></div>
         <span class="src-name">L'Adige</span>
         <span class="src-count">6</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="giornali">
         <div class="src-dot amber"></div>
         <span class="src-name">Alto Adige</span>
         <span class="src-count">3</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="upload">
         <div class="src-dot green"></div>
         <span class="src-name">Prime pagine PDF</span>
         <span class="src-count">2</span>
@@ -335,17 +335,17 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label clickable" data-group="Streaming TV">Streaming TV</div>
-      <div class="src-item">
+      <div class="src-item" data-category="tv">
         <div class="src-dot green"></div>
         <span class="src-name">Trentino TV</span>
         <span class="src-count">8</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="tv">
         <div class="src-dot green"></div>
         <span class="src-name">Rete 4 Locale</span>
         <span class="src-count">4</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="tv">
         <div class="src-dot red"></div>
         <span class="src-name">TV2000</span>
         <span class="src-count">0</span>
@@ -354,12 +354,12 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label clickable" data-group="Streaming Radio">Streaming Radio</div>
-      <div class="src-item">
+      <div class="src-item" data-category="radio">
         <div class="src-dot green"></div>
         <span class="src-name">Radio Dolomiti</span>
         <span class="src-count">5</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="radio">
         <div class="src-dot green"></div>
         <span class="src-name">Radio Adige</span>
         <span class="src-count">1</span>
@@ -368,22 +368,22 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label clickable" data-group="Social">Social</div>
-      <div class="src-item">
+      <div class="src-item" data-category="social">
         <div class="src-dot amber"></div>
         <span class="src-name">Instagram</span>
         <span class="src-count">3</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="social">
         <div class="src-dot green"></div>
         <span class="src-name">Facebook</span>
         <span class="src-count">1</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="social">
         <div class="src-dot green"></div>
         <span class="src-name">X (Twitter)</span>
         <span class="src-count">2</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="social">
         <div class="src-dot red"></div>
         <span class="src-name">TikTok</span>
         <span class="src-count">0</span>
@@ -392,12 +392,12 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label clickable" data-group="Altre fonti">Altre fonti</div>
-      <div class="src-item">
+      <div class="src-item" data-category="cciaa">
         <div class="src-dot green"></div>
         <span class="src-name">Camera di Commercio TN</span>
         <span class="src-count">2</span>
       </div>
-      <div class="src-item">
+      <div class="src-item" data-category="cciaa">
         <div class="src-dot green"></div>
         <span class="src-name">CCIAA Bolzano</span>
         <span class="src-count">1</span>
@@ -406,7 +406,7 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label" style="color:#f59e0b">⬆ Caricamenti manuali</div>
-      <div class="src-item src-upload">
+      <div class="src-item" data-category="upload" class="src-upload">
         <div class="src-icon">📄</div>
         <span class="src-name">File caricati da te</span>
         <span class="src-count">2</span>
@@ -733,13 +733,17 @@
     });
   });
 
+  // Categorie che vendono spazio pubblicitario → hanno scheda mezzo + listino
+  const ADVERTISING_CATEGORIES = new Set(['tv','radio','giornali']);
+
   // ── SIDEBAR: click singola fonte ────────────────────────────────
   document.querySelectorAll('.src-item').forEach(item => {
     item.addEventListener('click', function(){
       document.querySelectorAll('.src-item').forEach(i => i.classList.remove('active'));
       this.classList.add('active');
       const name = this.querySelector('.src-name');
-      const isAll = name?.textContent.trim() === 'Tutti i segnali';
+      const cat  = this.dataset.category || '';
+      const isAll = cat === 'all';
       if(name){
         document.getElementById('feed-title').textContent = name.textContent.trim();
         const cnt = this.querySelector('.src-count');
@@ -748,6 +752,12 @@
       // Scheda tabs: visibili solo per fonti specifiche
       const tabs = document.getElementById('scheda-tabs');
       if(tabs) tabs.style.display = isAll ? 'none' : 'flex';
+      // Scheda mezzo e Listino: solo per categorie pubblicitarie
+      const hasMedia = ADVERTISING_CATEGORIES.has(cat);
+      const stabMezzo   = document.getElementById('stab-mezzo');
+      const stabListino = document.getElementById('stab-listino');
+      if(stabMezzo)   stabMezzo.style.display   = hasMedia ? '' : 'none';
+      if(stabListino) stabListino.style.display  = hasMedia ? '' : 'none';
       if(!isAll) currentMezzoName = name?.textContent.trim() || '';
       showFeedCenter();
     });

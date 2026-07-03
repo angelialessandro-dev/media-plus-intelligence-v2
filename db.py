@@ -41,6 +41,7 @@ def init_db():
                     confidence      REAL NOT NULL DEFAULT 0.5,
                     source_name     TEXT NOT NULL,
                     source_category TEXT DEFAULT 'online_news',
+                    signal_nature   TEXT DEFAULT 'informative',
                     article_url     TEXT,
                     article_title   TEXT,
                     detected_at     TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -56,6 +57,8 @@ def init_db():
                     ai_products     TEXT
                 )
             """)
+            # Migration: add signal_nature if missing
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS signal_nature TEXT DEFAULT 'informative'")
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_company
                     ON signals(company_name, detected_at DESC)
@@ -121,9 +124,11 @@ def init_db():
                     detected_at      TIMESTAMP DEFAULT NOW(),
                     duration_seconds INTEGER DEFAULT 30,
                     signal_id        INTEGER,
-                    estimated_cost   REAL
+                    estimated_cost   REAL,
+                    spot_nature      TEXT DEFAULT 'advertising'
                 )
             """)
+            cur.execute("ALTER TABLE media_spots ADD COLUMN IF NOT EXISTS spot_nature TEXT DEFAULT 'advertising'")
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_spots_media_company
                     ON media_spots(media_name, company_name, detected_at DESC)

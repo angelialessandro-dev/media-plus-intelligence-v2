@@ -105,16 +105,22 @@ def signal_counts(period: str = Query("24h")):
 
 @app.get("/api/signals/categories")
 def signal_categories(period: str = Query("24h")):
-    """Aggregate counts by category for the sidebar."""
+    """Aggregate counts by category for the sidebar, with has_media_card flag."""
+    from config import ADVERTISING_CATEGORIES, CATEGORY_LABELS
     hours = period_to_hours(period)
     rows  = storage.get_signal_counts_by_source(period_hours=hours)
 
     by_cat: dict = {}
     for r in rows:
-        cat = r["source_category"]
+        cat   = r["source_category"]
         label = CATEGORY_LABELS.get(cat, cat)
         if label not in by_cat:
-            by_cat[label] = {"count": 0, "sources": {}}
+            by_cat[label] = {
+                "count":         0,
+                "sources":       {},
+                "category_key":  cat,
+                "has_media_card": cat in ADVERTISING_CATEGORIES,
+            }
         by_cat[label]["count"] += r["n"]
         by_cat[label]["sources"][r["source_name"]] = r["n"]
 

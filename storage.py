@@ -95,38 +95,44 @@ def save_signal(
     urgency: str = "media",
     ai_strategy: str = "",
     ai_products: str = "",
+    signal_nature: str = None,
 ) -> int:
+    from config import ADVERTISING_CATEGORIES
+    # Nature is derived from category unless explicitly set
+    if signal_nature is None:
+        signal_nature = "advertising" if source_category in ADVERTISING_CATEGORIES else "informative"
+
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO signals (
                     company_name, signal_type, description, confidence,
-                    source_name, source_category, article_url, article_title,
+                    source_name, source_category, signal_nature,
+                    article_url, article_title,
                     detected_at, published_at, expiry_days,
                     sector, city, province, action, raw_excerpt,
                     urgency, ai_strategy, ai_products
                 ) VALUES (
-                    %s,%s,%s,%s, %s,%s,%s,%s,
+                    %s,%s,%s,%s, %s,%s,%s,
+                    %s,%s,
                     %s,%s,%s,
                     %s,%s,%s,%s,%s,
                     %s,%s,%s
                 ) RETURNING id
             """, (
                 company_name, signal_type, description, confidence,
-                source_name, source_category, article_url, article_title,
+                source_name, source_category, signal_nature,
+                article_url, article_title,
                 datetime.utcnow(), published_at, expiry_days,
                 sector, city, province, action, raw_excerpt,
                 urgency, ai_strategy, ai_products,
             ))
             new_id = cur.fetchone()["id"]
-
-            # Update source signal count
             cur.execute("""
                 UPDATE sources SET signal_count = signal_count + 1, last_crawl = NOW()
                 WHERE name = %s
             """, (source_name,))
-
         conn.commit()
         return new_id
     finally:
@@ -196,8 +202,11 @@ def get_signal_counts_by_source(period_hours: int = 24) -> dict:
 
 def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
     """
-    Aggregate signals per company, compare with previous period,
-    return ranked list for the top-mover panel.
+    Aggregate signals per company.
+    - n_informative: count of informative signals (articles, news, CCIAA)
+    - n_advertising: count of advertising signals (spots, insertions)
+    - pct_change: based on informative signals for now (advertising when streaming active)
+    - spend_estimated: only from advertising signals via media_spots
     """
     conn = get_connection()
     try:
@@ -205,20 +214,24 @@ def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
             cutoff     = datetime.utcnow() - timedelta(hours=period_hours)
             prev_start = cutoff - timedelta(hours=period_hours)
 
-            # Current period
+            # Current period — all signals
             cur.execute("""
-                SELECT company_name, COUNT(*) as n_current,
-                       MAX(sector) as sector,
-                       MAX(city) as city,
-                       STRING_AGG(DISTINCT source_name, ' · ' ORDER BY source_name) as sources,
-                       AVG(confidence) as avg_confidence
+                SELECT
+                    company_name,
+                    COUNT(*) as n_total,
+                    COUNT(*) FILTER (WHERE signal_nature = 'informative') as n_informative,
+                    COUNT(*) FILTER (WHERE signal_nature = 'advertising') as n_advertising,
+                    MAX(sector) as sector,
+                    MAX(city) as city,
+                    STRING_AGG(DISTINCT source_name, ' · ' ORDER BY source_name) as sources,
+                    AVG(confidence) as avg_confidence
                 FROM signals
                 WHERE detected_at > %s
                 GROUP BY company_name
             """, (cutoff,))
             current = {r["company_name"]: dict(r) for r in cur.fetchall()}
 
-            # Previous period (for delta calculation)
+            # Previous period — for delta
             cur.execute("""
                 SELECT company_name, COUNT(*) as n_prev
                 FROM signals
@@ -227,24 +240,34 @@ def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
             """, (prev_start, cutoff))
             prev = {r["company_name"]: r["n_prev"] for r in cur.fetchall()}
 
+            # Advertising spend from media_spots (only real spots count)
+            cur.execute("""
+                SELECT company_name,
+                       COALESCE(SUM(estimated_cost), 0) as spend
+                FROM media_spots
+                WHERE detected_at > %s
+                GROUP BY company_name
+            """, (cutoff,))
+            spend_map = {r["company_name"]: float(r["spend"]) for r in cur.fetchall()}
+
             results = []
             for company, data in current.items():
-                n_cur  = data["n_current"]
+                n_cur  = data["n_total"]
                 n_prev = prev.get(company, 0)
-                if n_prev > 0:
-                    pct = round(((n_cur - n_prev) / n_prev) * 100)
-                else:
-                    pct = 100 if n_cur > 0 else 0
+                pct = round(((n_cur - n_prev) / n_prev) * 100) if n_prev > 0 else (100 if n_cur > 0 else 0)
 
                 results.append({
-                    "company_name":  company,
-                    "sources":       data["sources"] or "",
-                    "sector":        data["sector"] or "",
-                    "city":          data["city"] or "",
-                    "n_signals":     n_cur,
-                    "n_prev":        n_prev,
-                    "pct_change":    pct,
-                    "avg_confidence": round(float(data["avg_confidence"] or 0.5), 2),
+                    "company_name":     company,
+                    "sources":          data["sources"] or "",
+                    "sector":           data["sector"] or "",
+                    "city":             data["city"] or "",
+                    "n_signals":        n_cur,
+                    "n_informative":    data["n_informative"],
+                    "n_advertising":    data["n_advertising"],
+                    "n_prev":           n_prev,
+                    "pct_change":       pct,
+                    "spend_estimated":  spend_map.get(company, 0.0),
+                    "avg_confidence":   round(float(data["avg_confidence"] or 0.5), 2),
                 })
 
             results.sort(key=lambda x: (x["pct_change"], x["n_signals"]), reverse=True)

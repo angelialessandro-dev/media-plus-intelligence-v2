@@ -25,6 +25,8 @@ TARGET_CITIES = [
     "Egna","Caldaro","Appiano","Laives","Ora","Ortisei","Badia","Dobbiaco",
     "San Candido","Storo","Ledro","Mori","Ala","Avio","Folgaria",
 ]
+# Alias used by extractor.py
+CITIES = TARGET_CITIES
 SECTORS = [
     "Automotive","Turismo","Casa e Edilizia","Ristorazione","Retail",
     "Tecnologia","Salute e Benessere","Agricoltura","Moda e Abbigliamento",
@@ -87,7 +89,15 @@ CATEGORY_LABELS = {
     "upload":      "Caricamenti manuali",
 }
 
+# Categorie che vendono spazio pubblicitario:
+# → hanno Scheda mezzo + Listino prezzi
+# → i loro spot alimentano il grafico spesa nelle schede azienda
+ADVERTISING_CATEGORIES = {"tv", "radio", "giornali"}
+
+# Categorie puramente informative:
+# → solo Scheda segnali, nessuna scheda mezzo né listino
+# → i loro segnali NON contribuiscono mai al grafico spesa
+INFO_ONLY_CATEGORIES = {"online_news", "cciaa", "upload", "social"}
+
 # ── OUTPUT ────────────────────────────────────────────────────────────────────
 LOG_PATH = "data/intelligence.log"
-
-CITIES = TARGET_CITIES
