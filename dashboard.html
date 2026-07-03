@@ -301,7 +301,7 @@
         <span class="src-name">Tutti i segnali</span>
         <span class="src-count">47</span>
       </div>
-      <div class="sidebar-label clickable" style="margin-top:14px" data-group="Online news">Online news</div>
+      <div class="sidebar-label clickable" style="margin-top:14px" data-group="Altre news">Altre news</div>
       <div class="src-item" data-category="online_news">
         <div class="src-dot green"></div>
         <span class="src-name">Google News TN/BZ</span>
@@ -440,8 +440,8 @@
       </div>
       <!-- Scheda tabs: visibili solo quando si seleziona una fonte specifica -->
       <div class="scheda-tabs" id="scheda-tabs" style="display:none">
-        <button class="stab on" id="stab-segnali" onclick="switchToSegnali()">Scheda segnali</button>
-        <button class="stab" id="stab-mezzo" onclick="switchToMezzo()">Scheda mezzo</button>
+        <button class="stab on" id="stab-segnali" onclick="switchToSegnali()">Segnali</button>
+        <button class="stab" id="stab-mezzo" onclick="switchToMezzo()">Analisi pubblicità</button>
         <button class="stab" id="stab-listino" onclick="switchToListino()">Listino prezzi</button>
       </div>
     </div>
@@ -1067,7 +1067,7 @@
       ]
     },
     'Google News TN/BZ': {
-      tipo:'Online news', icona:'🌐', priceUnit:'CPM',
+      tipo:'Altre news', icona:'🌐', priceUnit:'CPM',
       spots: {'1D':18,'7D':94,'1M':380,'6M':1640,'1A':3820},
       fatturato: {'1D':90,'7D':470,'1M':1900,'6M':8200,'1A':19100},
       delta: {'1D':12,'7D':12,'1M':15,'6M':10,'1A':8},
@@ -1250,23 +1250,38 @@
       '<button class="mftab'+(i===0?' on':'')+'" onclick="mezzoFascia(this)">'+f+'</button>'
     ).join('');
 
-    // grafico fatturato stimato
-    const mezzoPeriodSeries = resampleAndScale(m.serie, PERIOD_POINTS[period]||12, fat/(PERIOD_POINTS[period]||12));
-    const chartHtml = makeBigSVG(mezzoPeriodSeries, c, period);
+    // grafico fatturato stimato — solo da dati pubblicitari reali
+    // Finché non c'è monitoraggio streaming, il grafico è a zero
+    const hasRealData = false; // diventerà true quando arriveranno i dati streaming
+    const mezzoPeriodSeries = hasRealData
+      ? resampleAndScale(m.serie, PERIOD_POINTS[period]||12, fat/(PERIOD_POINTS[period]||12))
+      : Array(PERIOD_POINTS[period]||12).fill(0);
+    const mezzoChartColor = hasRealData ? c : '#475569';
+    const chartHtml = makeBigSVG(mezzoPeriodSeries, mezzoChartColor, period);
 
-    // lista inserzionisti con barra proporzionale
-    const maxSpend = Math.max(...m.topAdv.map(a=>a.spend));
-    const advHtml = m.topAdv.map(a=>{
-      const aUp = a.pct>=0; const aC = aUp?'#10b981':'#ef4444';
-      const pct = Math.round(a.spend/maxSpend*100);
-      return '<div class="adv-row" onclick="advClick(\''+a.name+'\')">'
-        +'<div class="adv-name">'+a.name+'</div>'
-        +'<div class="adv-bar-wrap"><div class="adv-bar" style="width:'+pct+'%;background:'+aC+'"></div></div>'
-        +'<div class="adv-spots">'+a.spots+' spot</div>'
-        +'<div class="adv-spend">\u20ac'+a.spend.toLocaleString('it-IT')+'</div>'
-        +'<div class="adv-delta" style="color:'+aC+'">'+(aUp?'\u25b2':'\u25bc')+' '+(aUp?'+':'')+a.pct+'%</div>'
+    // lista inserzionisti — solo da dati pubblicitari reali (media_spots)
+    // Se non ci sono spot rilevati, mostra messaggio
+    const hasRealAdv = m.topAdv && m.topAdv.length > 0 && m.topAdv.some(a => a.isReal);
+    let advHtml;
+    if(!hasRealAdv){
+      advHtml = '<div style="padding:16px 24px;color:var(--muted);font-size:12px;font-style:italic">'
+        +'Nessun dato pubblicitario rilevato per questo mezzo.<br>'
+        +'<span style="font-size:11px">Gli inserzionisti compariranno automaticamente quando il monitoraggio streaming sarà attivo.</span>'
         +'</div>';
-    }).join('');
+    } else {
+      const maxSpend = Math.max(...m.topAdv.map(a=>a.spend));
+      advHtml = m.topAdv.filter(a=>a.isReal).map(a=>{
+        const aUp = a.pct>=0; const aC = aUp?'#10b981':'#ef4444';
+        const pct = Math.round(a.spend/maxSpend*100);
+        return '<div class="adv-row" onclick="advClick(\''+a.name+'\')">'
+          +'<div class="adv-name">'+a.name+'</div>'
+          +'<div class="adv-bar-wrap"><div class="adv-bar" style="width:'+pct+'%;background:'+aC+'"></div></div>'
+          +'<div class="adv-spots">'+a.spots+' spot</div>'
+          +'<div class="adv-spend">\u20ac'+a.spend.toLocaleString('it-IT')+'</div>'
+          +'<div class="adv-delta" style="color:'+aC+'">'+(aUp?'\u25b2':'\u25bc')+' '+(aUp?'+':'')+a.pct+'%</div>'
+          +'</div>';
+      }).join('');
+    }
 
     // prezziario
     const prezzHtml = m.prezziario.map(p=>
@@ -1308,7 +1323,7 @@
   }
 
   // ── SCHEDA AZIENDA ───────────────────────────────────────────────
-  const SOURCE_CATEGORIES=['Tutte','Online news','Giornali online/offline','Streaming TV','Streaming Radio','Social','Altre fonti','Caricamenti manuali'];
+  const SOURCE_CATEGORIES=['Tutte','Altre news','Giornali online/offline','Streaming TV','Streaming Radio','Social','Altre fonti','Caricamenti manuali'];
   const cvPeriodLabels={'1D':'variazione 24h','7D':'variazione 7gg','1M':'variazione mensile','6M':'variazione 6 mesi','1A':'variazione annua','CUSTOM':'nel periodo sel.'};
   const cvSpendLabels={'1D':'spesa 24h','7D':'spesa 7gg','1M':'spesa mensile','6M':'spesa 6 mesi','1A':'spesa annua','CUSTOM':'spesa periodo'};
 
@@ -1373,7 +1388,7 @@
     const a=mover.source.toLowerCase();
     if(cat==='Streaming TV'&&a.includes('tv')) return 0.6;
     if(cat==='Streaming Radio'&&a.includes('radio')) return 0.4;
-    if(cat==='Online news'&&a.includes('news')) return 0.2;
+    if(cat==='Altre news'&&a.includes('news')) return 0.2;
     if(cat==='Social'&&(a.includes('instagram')||a.includes('facebook')||a.includes('tiktok')||a.includes('x ('))) return 0.3;
     if(cat==='Giornali online/offline'&&a.includes('adige')) return 0.15;
     return 0;

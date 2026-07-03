@@ -9,7 +9,7 @@ CLAUDE_MAX_TOKENS   = 1200
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # ── CRAWLER ───────────────────────────────────────────────────────────────────
-CRAWL_INTERVAL_MINUTES  = int(os.getenv("CRAWL_INTERVAL_MINUTES", "30"))
+CRAWL_INTERVAL_MINUTES  = int(os.getenv("CRAWL_INTERVAL_MINUTES", "60"))
 DELAY_BETWEEN_CALLS     = 2.0
 MAX_ARTICLES_PER_RUN    = 60
 ARTICLE_MAX_AGE_DAYS    = 7
@@ -86,7 +86,7 @@ SOURCES = [
 
 # Mapping category → display label
 CATEGORY_LABELS = {
-    "online_news": "Online news",
+    "online_news": "Altre news",
     "giornali":    "Giornali online/offline",
     "tv":          "Streaming TV",
     "radio":       "Streaming Radio",
