@@ -731,6 +731,68 @@
     if(document.getElementById('search-bar').classList.contains('open'))
       document.getElementById('search-input').focus();
   });
+
+  // Search input handler
+  const searchInput = document.getElementById('search-input');
+  let searchTimeout = null;
+  searchInput.addEventListener('input', function(){
+    clearTimeout(searchTimeout);
+    const q = this.value.trim();
+    if(q.length < 2){ return; }
+    searchTimeout = setTimeout(() => performSearch(q), 400);
+  });
+  searchInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      clearTimeout(searchTimeout);
+      performSearch(this.value.trim());
+    }
+    if(e.key === 'Escape'){
+      document.getElementById('search-bar').classList.remove('open');
+      this.value = '';
+    }
+  });
+
+  async function performSearch(query){
+    if(!query) return;
+    // Cerca nell'API i segnali che corrispondono alla query
+    const url = `${API}/api/signals?period=all&limit=20&order_by=detected_at&company=${encodeURIComponent(query)}`;
+    try {
+      const r = await fetch(url);
+      const data = await r.json();
+      const signals = data.signals || [];
+
+      // Aggiorna il feed con i risultati
+      document.getElementById('feed-title').textContent = `Ricerca: "${query}"`;
+      document.getElementById('feed-count').textContent = signals.length + ' risultati';
+
+      // Nascondi tab scheda e mostra feed
+      document.getElementById('scheda-tabs').style.display = 'none';
+      currentCatFilter = null;
+      currentSourceFilter = null;
+
+      const container = document.getElementById('signals-container');
+      if(signals.length === 0){
+        container.innerHTML = '<div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px">Nessun risultato per "<strong>'+escHtml(query)+'</strong>".</div>';
+      } else {
+        container.innerHTML = signals.map(renderSignalCard).join('');
+      }
+
+      // Chiudi la search bar e mostra il feed
+      document.getElementById('search-bar').classList.remove('open');
+      document.getElementById('search-input').value = '';
+      showFeedCenter();
+
+      // Se c'è un solo risultato e il nome corrisponde esattamente, apri la scheda azienda
+      if(signals.length > 0){
+        const exactMatch = movers.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
+        if(exactMatch){
+          showCompanyCenter(exactMatch, `Ricerca: "${query}"`);
+        }
+      }
+    } catch(e){
+      console.warn('Search error:', e.message);
+    }
+  }
   document.addEventListener('click', () => {
     document.getElementById('user-menu').classList.remove('open');
     document.getElementById('search-bar').classList.remove('open');

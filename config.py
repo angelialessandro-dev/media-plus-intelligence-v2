@@ -66,6 +66,38 @@ SOURCES = [
      "url":"https://news.google.com/rss/search?q=inaugurazione+Alto+Adige+2026&hl=it&gl=IT&ceid=IT:it"},
     {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":2,
      "url":"https://news.google.com/rss/search?q=investe+Bolzano+OR+Merano+azienda&hl=it&gl=IT&ceid=IT:it"},
+    # ── 1. Turismo e ospitalità ─────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
+     "url":"https://news.google.com/rss/search?q=hotel+OR+albergo+apre+Trentino+Alto+Adige&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
+     "url":"https://news.google.com/rss/search?q=struttura+turistica+inaugurazione+Trentino&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":1,
+     "url":"https://news.google.com/rss/search?q=turismo+investimento+Bolzano+OR+Merano+2026&hl=it&gl=IT&ceid=IT:it"},
+    # ── 2. Investimenti pubblici Provincia e Comune ──────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
+     "url":"https://news.google.com/rss/search?q=Provincia+Trento+investimento+OR+finanziamento+2026&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":1,
+     "url":"https://news.google.com/rss/search?q=Provincia+Bolzano+investimento+OR+bando+2026&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=comune+Trento+OR+Rovereto+piano+investimenti&hl=it&gl=IT&ceid=IT:it"},
+    # ── 3. Retail e negozi ──────────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=apre+negozio+OR+store+Trento+OR+Rovereto&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":2,
+     "url":"https://news.google.com/rss/search?q=nuovo+punto+vendita+Bolzano+OR+Merano&hl=it&gl=IT&ceid=IT:it"},
+    # ── 4. Agricoltura e alimentare ─────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=cantina+OR+vino+OR+mela+investimento+Trentino+Alto+Adige&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=agricoltura+OR+alimentare+inaugurazione+Trentino+2026&hl=it&gl=IT&ceid=IT:it"},
+    # ── 5. Sport e outdoor ──────────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=sport+outdoor+OR+sci+investimento+Trentino+Alto+Adige&hl=it&gl=IT&ceid=IT:it"},
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=impianto+sportivo+OR+pista+inaugurazione+Trentino&hl=it&gl=IT&ceid=IT:it"},
+    # ── 6. Automotive ───────────────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":3,
+     "url":"https://news.google.com/rss/search?q=concessionaria+OR+auto+apre+Trentino+Bolzano&hl=it&gl=IT&ceid=IT:it"},
     # ── Quotidiani locali (RSS diretti) ─────────────────────────────
     {"name":"L'Adige",        "type":"newspaper","category":"giornali","region":"TN","priority":1,
      "url":"https://www.ladige.it/feed-rss"},
