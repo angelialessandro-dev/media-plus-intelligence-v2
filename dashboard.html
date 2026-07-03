@@ -1635,18 +1635,19 @@
   // ── INIT ─────────────────────────────────────────────────────────
   let activePeriod='1D';
 
-  // Try to load real data, fall back to mock
+  // Carica i segnali subito, indipendentemente dal caricamento dei movers
+  loadSignals();
+
+  // Carica i movers reali in parallelo
   (async () => {
     const realMovers = await loadTopMovers(activePeriod);
     if(realMovers && realMovers.length > 0){
-      // Replace mock movers with real ones
       movers.splice(0, movers.length, ...realMovers);
       console.log('Loaded', realMovers.length, 'real movers from API');
     }
     renderMovers(activePeriod);
     updateSidebarCounts('24h');
-    loadSignals(); // carica segnali reali dall'API
-  })();
+  })().catch(e => console.warn('Movers init error:', e));
   initCalPicker();
   initResizeHandle();
 
