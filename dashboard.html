@@ -567,7 +567,7 @@
         ${srcBadge}
         <span class="sig-time">${timeAgo(s.detected_at)}</span>
       </div>
-      <div class="sig-company sig-company-link" onclick="event.stopPropagation();feedCompanyClick(${JSON.stringify(s.company_name)})">${escHtml(s.company_name)}</div>
+      <div class="sig-company sig-company-link" data-cname="${escHtml(s.company_name)}" onclick="event.stopPropagation();feedCompanyClick(this.dataset.cname)">${escHtml(s.company_name)}</div>
       <div class="sig-desc">${escHtml(s.description)}</div>
       <div class="sig-bottom"><span class="${urgCls}">● ${urgLabel}</span></div>
       ${expandHtml}
