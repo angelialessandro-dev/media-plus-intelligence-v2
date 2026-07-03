@@ -1587,38 +1587,69 @@
   }
 
   // ── API: carica segnali reali nel feed ──────────────────────────
-  // ── API: aggiorna contatori sidebar ─────────────────────────────
+  // Mappa: nome sidebar → nomi interni del crawler
+  const SIDEBAR_SOURCE_MAP = {
+    "Tutti i segnali":        null, // speciale: usa il totale
+    "Google News TN/BZ":      ["GN: apre Trento","GN: inaugurazione TN","GN: investe TN","GN: nuovo locale TN","GN: espande TN","GN: assume TN","GN: apre Bolzano","GN: inaugura BZ","GN: nuove imprese TN"],
+    "Google News Nazionale":  ["GN: investe BZ","GN: assume BZ"],
+    "L'Adige":                ["L'Adige"],
+    "Alto Adige":             ["Alto Adige"],
+    "Prime pagine PDF":       ["Upload"],
+    "Trentino TV":            ["Trentino TV"],
+    "Rete 4 Locale":          ["Rete 4 Locale"],
+    "TV2000":                 ["TV2000"],
+    "Radio Dolomiti":         ["Radio Dolomiti"],
+    "Radio Adige":            ["Radio Adige"],
+    "Instagram":              ["Instagram"],
+    "Facebook":               ["Facebook"],
+    "X (Twitter)":            ["X (Twitter)","X"],
+    "TikTok":                 ["TikTok"],
+    "Camera di Commercio TN": ["CCIAA TN"],
+    "CCIAA Bolzano":          ["CCIAA BZ"],
+    "File caricati da te":    ["upload","Upload"],
+  };
+
   async function updateSidebarCounts(period){
-    const map = {'24h':'24h','settimana':'7d','tutte':'all'};
+    const map = {'24h':'24h','48h':'48h','settimana':'7d','tutte':'all'};
     const ph = map[period]||'24h';
     try {
       const r = await fetch(API+'/api/signals/categories?period='+ph);
       if(!r.ok) return;
       const data = await r.json();
-      // Update counts in sidebar
-      document.querySelectorAll('.src-item').forEach(item => {
+
+      // Costruisci una mappa piatta source_name → count dai dati API
+      const sourceCountMap = {};
+      for(const catInfo of Object.values(data.categories||{})){
+        for(const [src, cnt] of Object.entries(catInfo.sources||{})){
+          sourceCountMap[src] = (sourceCountMap[src]||0) + cnt;
+        }
+      }
+
+      // Aggiorna tutti i src-item
+      document.querySelectorAll('.src-item').forEach(item=>{
         const nameEl = item.querySelector('.src-name');
         const cntEl  = item.querySelector('.src-count');
-        if(!nameEl||!cntEl) return;
-        const name = nameEl.textContent.trim();
-        // Check all categories for this source name
-        for(const [cat, info] of Object.entries(data.categories||{})){
-          if(info.sources && info.sources[name] !== undefined){
-            cntEl.textContent = info.sources[name];
-            return;
-          }
+        if(!nameEl || !cntEl) return;
+        const label = nameEl.textContent.trim();
+
+        if(label === 'Tutti i segnali'){
+          cntEl.textContent = data.total || 0;
+          return;
         }
+
+        const internalNames = SIDEBAR_SOURCE_MAP[label];
+        if(internalNames === undefined){
+          cntEl.textContent = 0; // fonte non mappata
+          return;
+        }
+        const total = internalNames.reduce((sum, n) => sum + (sourceCountMap[n]||0), 0);
+        cntEl.textContent = total;
       });
-      // Update total
-      const totalEl = document.querySelector('.src-item .src-count');
-      if(totalEl && data.total !== undefined){
-        const firstItem = document.querySelector('.src-item');
-        const cnt = firstItem?.querySelector('.src-count');
-        if(cnt) cnt.textContent = data.total;
-      }
-      // Update feed count
-      const feedCnt = document.getElementById('feed-count');
-      if(feedCnt && document.getElementById('feed-title')?.textContent === 'Tutti i segnali'){
+
+      // Aggiorna feed count se siamo su "Tutti i segnali"
+      const feedTitle = document.getElementById('feed-title');
+      const feedCnt   = document.getElementById('feed-count');
+      if(feedCnt && feedTitle?.textContent === 'Tutti i segnali'){
         feedCnt.textContent = (data.total||0)+' segnali';
       }
     } catch(e){ console.warn('Sidebar counts error:', e.message); }
