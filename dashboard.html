@@ -789,7 +789,8 @@
     dd.classList.add('open');
 
     dd.querySelectorAll('.search-res-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
         const type  = item.dataset.type;
         const label = item.dataset.label;
         closeSearch();
@@ -832,24 +833,15 @@
   document.getElementById('search-input').addEventListener('keydown', function(e){
     if(e.key === 'Escape') closeSearch();
   });
-  document.addEventListener('click', () => {
+  document.addEventListener('click', (e) => {
     document.getElementById('user-menu').classList.remove('open');
     const bar = document.getElementById('search-bar');
-    if(!bar.contains(event.target)) closeSearch();
+    if(bar && !bar.contains(e.target)) closeSearch();
     const wrap = document.getElementById('cal-picker-wrap');
     if(wrap) wrap.classList.remove('open');
     const cvWrap = document.getElementById('cv-cal-wrap');
     if(cvWrap) cvWrap.classList.remove('open');
   });
-  document.addEventListener('click', () => {
-    document.getElementById('user-menu').classList.remove('open');
-    document.getElementById('search-bar').classList.remove('open');
-    const wrap = document.getElementById('cal-picker-wrap');
-    if(wrap) wrap.classList.remove('open');
-    const cvWrap = document.getElementById('cv-cal-wrap');
-    if(cvWrap) cvWrap.classList.remove('open');
-  });
-
   // ── SIDEBAR: click sezione (titoli) ─────────────────────────────
   document.querySelectorAll('.sidebar-label.clickable').forEach(label => {
     label.addEventListener('click', function(){
