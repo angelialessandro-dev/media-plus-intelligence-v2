@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Plus Intelligence — v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,600;0,700;0,800<style>display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e2d45;
+    --accent: #2563eb;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --muted2: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Public Sans', sans-serif; font-size: 13px; height: 100vh; overflow: hidden; }
+
+  /* ── LAYOUT ── */
+  .shell { display: grid; grid-template-rows: 48px 1fr; grid-template-columns: 220px 1fr 370px; height: 100vh; }
+  .topbar { grid-column: 1/-1; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 18px; gap: 24px; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; }
+  .main { overflow-y: auto; background: var(--bg); }
+  .rightpanel { background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; position: relative; }
+  .resize-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; z-index: 20; }
+  .resize-handle::after { content: ''; position: absolute; left: 2px; top: 50%; transform: translateY(-50%); height: 40px; width: 1px; background: var(--border); border-radius: 1px; }
+  .resize-handle:hover::after, .resize-handle.dragging::after { background: var(--accent); }
+
+  /* ── COMPANY DETAIL — CENTRO ── */
+  .cv-back { display: flex; align-items: center; gap: 8px; padding: 14px 24px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--muted); font-size: 12px; font-weight: 600; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .cv-back:hover { color: var(--text); }
+  .cv-hero { padding: 24px 24px 0; }
+  .cv-name { font-size: 28px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 4px; }
+  .cv-source-tag { font-size: 11px; color: var(--muted); margin-bottom: 20px; }
+  .cv-stats { display: flex; gap: 28px; margin-bottom: 24px; }
+  .cv-stat-val { font-size: 22px; font-weight: 800; line-height: 1; }
+  .cv-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .cv-chart-section { padding: 0 24px 20px; }
+  .cv-source-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .cv-stab { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted2); cursor: pointer; background: transparent; font-family: inherit; }
+  .cv-stab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .cv-big-chart { width: 100%; height: 200px; }
+  .cv-big-chart svg { width: 100%; height: 100%; }
+  .cv-signals-hdr { display: flex; align-items: center; gap: 10px; padding: 16px 24px 12px; border-top: 1px solid var(--border); }
+  .cv-signals-title { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); }
+  .cv-signal { padding: 12px 24px; border-top: 1px solid var(--border); }
+  .cv-sig-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .cv-sig-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+  .sig-company-link { cursor: pointer; }
+  .sig-company-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── SCHEDA TABS (sotto il titolo fonte) ── */
+  .scheda-tabs { display: flex; gap: 0; margin: 10px -20px 0; padding: 0 20px; border-bottom: 1px solid var(--border); }
+  .stab { padding: 10px 20px; border: none; background: transparent; color: var(--muted2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+  .stab.on { color: var(--text); border-bottom-color: var(--accent); }
+  .stab:hover { color: var(--text); }
+
+  /* ── SCHEDA MEZZO ── */
+  .mezzo-hero { padding: 24px 24px 0; }
+  .mezzo-tipo { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .mezzo-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+  .mezzo-stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .mezzo-stat-val { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .mezzo-stat-lbl { font-size: 10px; color: var(--muted); }
+  .mezzo-format-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .mftab { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted2); cursor: pointer; background: transparent; font-family: inherit; }
+  .mftab.on { background: var(--surface2); border-color: var(--muted); color: var(--text); }
+
+  /* Inserzionisti */
+  .mezzo-section-title { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); padding: 16px 24px 12px; border-top: 1px solid var(--border); }
+  .adv-row { display: grid; grid-template-columns: 180px 1fr 70px 80px 50px; gap: 12px; align-items: center; padding: 10px 24px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+  .adv-row:hover { background: var(--surface2); }
+  .adv-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .adv-bar-wrap { background: var(--border); border-radius: 3px; height: 6px; }
+  .adv-bar { height: 6px; border-radius: 3px; }
+  .adv-spots { font-size: 11px; color: var(--muted2); text-align: right; }
+  .adv-spend { font-size: 12px; font-weight: 700; text-align: right; }
+  .adv-delta { font-size: 11px; font-weight: 700; text-align: right; }
+
+  /* Listino */
+  .listino-section { padding: 0 24px 24px; }
+  .listino-header { display: grid; grid-template-columns: 1fr 90px 100px 80px 36px; gap: 12px; padding: 10px 14px; font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .listino-row { display: grid; grid-template-columns: 1fr 90px 100px 80px 36px; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); align-items: center; }
+  .listino-row:hover { background: var(--surface2); }
+  .listino-formato { font-size: 13px; font-weight: 600; }
+  .listino-specs { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .listino-durata { font-size: 12px; color: var(--muted2); }
+  .listino-prezzo { font-size: 14px; font-weight: 800; color: var(--amber); }
+  .listino-unit { font-size: 10px; color: var(--muted); }
+  .listino-note { font-size: 10px; color: var(--muted2); font-style: italic; }
+  .listino-edit { border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; }
+  .listino-edit:hover { color: var(--text); background: var(--border); }
+  .listino-section-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 18px 0 10px; border-top: 1px solid var(--border); margin-top: 8px; display: flex; align-items: center; justify-content: space-between; }
+  .btn-add-price { padding: 4px 12px; border-radius: 6px; border: 1px dashed var(--border); background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; font-family: inherit; }
+  .btn-add-price:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── TOPBAR ── */
+  .logo { font-weight: 700; font-size: 19px; letter-spacing: -.3px; color: var(--text); cursor: pointer; }
+  .logo span { color: var(--accent); }
+  .ticker-strip { flex: 1; display: flex; gap: 20px; overflow: hidden; }
+  .tick { display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; }
+  .tick-name { color: var(--muted2); font-weight: 500; }
+  .tick-val { font-weight: 700; }
+  .tick-val.up { color: var(--green); }
+  .tick-val.down { color: var(--red); }
+  .tick-delta { font-size: 10px; }
+  .tick-delta.up { color: var(--green); }
+  .tick-delta.down { color: var(--red); }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-top { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 11px; cursor: pointer; font-weight: 600; }
+  .btn-top.primary { background: var(--accent); border-color: var(--accent); }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ── SIDEBAR ── */
+  .sidebar-section { padding: 14px 12px 6px; }
+  .btn-add-source { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px dashed var(--accent); background: transparent; color: var(--accent); font-size: 12px; cursor: pointer; font-weight: 700; font-family: 'Public Sans', sans-serif; text-align: left; letter-spacing: .2px; transition: background .15s; }
+  .btn-add-source:hover { background: #1a2a4a; }
+  .src-upload .src-name { color: var(--amber); }
+  .src-upload .src-count { color: var(--amber); }
+  .sidebar-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .sidebar-label.clickable { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .sidebar-label.clickable:hover { color: var(--text); }
+  .sidebar-label.clickable::after { content: '›'; font-size: 11px; opacity: 0; transition: opacity .15s; }
+  .sidebar-label.clickable:hover::after { opacity: 1; }
+  .src-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; margin-bottom: 2px; }
+  .src-item:hover, .src-item.active { background: var(--surface2); }
+  .src-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .src-dot.green { background: var(--green); }
+  .src-dot.amber { background: var(--amber); }
+  .src-dot.red { background: var(--red); }
+  .src-name { flex: 1; font-size: 12px; color: var(--muted2); }
+  .src-count { font-size: 10px; font-weight: 700; color: var(--muted); }
+  .src-item.active .src-name { color: var(--text); }
+  .src-icon { font-size: 14px; width: 20px; text-align: center; }
+  .sidebar-divider { height: 1px; background: var(--border); margin: 10px 12px; }
+
+  /* ── MAIN FEED ── */
+  .feed-header { padding: 18px 20px 0; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .feed-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .feed-title { font-size: 26px; font-weight: 800; letter-spacing: -.5px; line-height: 1; }
+  .feed-count { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 3px 8px; border-radius: 12px; margin-top: 4px; }
+  .feed-controls { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
+  .time-chips { display: flex; gap: 5px; }
+  .time-chip { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted2); cursor: pointer; background: transparent; font-family: inherit; white-space: nowrap; }
+  .time-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .feed-selects { display: flex; gap: 8px; margin-left: auto; }
+  .feed-select { padding: 5px 26px 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center; color: var(--muted2); font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; appearance: none; -webkit-appearance: none; }
+  .feed-select:focus { outline: none; border-color: var(--accent); }
+  .feed-pagination { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 16px 20px; border-top: 1px solid var(--border); }
+  .page-btn { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted2); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+  .page-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-btn:hover:not(.on) { background: var(--surface2); color: var(--text); }
+  .page-dots { color: var(--muted); font-size: 12px; padding: 0 2px; }
+
+  .signal-card { padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+  .signal-card:hover, .signal-card.open { background: var(--surface2); }
+  .sig-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sig-source { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+  .sig-source.news { background: #1e3a5f; color: #60a5fa; }
+  .sig-source.radio { background: #2d1b69; color: #a78bfa; }
+  .sig-source.tv { background: #1a3a2d; color: #34d399; }
+  .sig-source.social { background: #3b1f0f; color: #fb923c; }
+  .sig-source.cciaa { background: #1f2d1a; color: #86efac; }
+  .sig-source.upload { background: #2d2510; color: #fcd34d; }
+  .sig-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+  .sig-company { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .sig-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; margin-bottom: 10px; }
+  .sig-bottom { display: flex; align-items: center; gap: 10px; }
+  .sig-badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+  .sig-badge.alta { background: #1c3528; color: var(--green); }
+  .sig-badge.media { background: #2d2010; color: var(--amber); }
+  .sig-badge.bassa { background: #1f1f2e; color: var(--muted2); }
+  .sig-freq { display: none; }
+  .sparkline { display: none; }
+  .spark-bar { width: 4px; border-radius: 1px; background: var(--accent); opacity: .6; }
+  .spark-bar.hi { background: var(--green); opacity: 1; }
+  .sig-expand { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); display: none; }
+  .signal-card.open .sig-expand { display: block; }
+  .expand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .expand-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .expand-box-title { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .expand-box p { font-size: 12px; color: var(--muted2); line-height: 1.6; }
+  .strategy-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .strategy-num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .strategy-text { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+  .product-suggestion { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .prod-name { font-size: 12px; font-weight: 600; }
+  .prod-price { font-size: 11px; color: var(--green); font-weight: 700; }
+  .prod-why { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ── RIGHT PANEL — TOP MOVER ── */
+  .rp-header { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 10; display: flex; align-items: center; gap: 8px; }
+  .rp-title { font-size: 13px; font-weight: 800; letter-spacing: .3px; flex: 1; }
+  .period-tabs { display: flex; gap: 2px; }
+  .ptab { padding: 3px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; color: var(--muted); cursor: pointer; border: none; background: transparent; font-family: 'Public Sans', sans-serif; }
+  .ptab.on { background: var(--accent); color: #fff; }
+  .ptab-cal { padding: 3px 8px; border-radius: 4px; color: var(--muted); cursor: pointer; border: none; background: transparent; line-height: 1; position: relative; display: flex; align-items: center; }
+  .ptab-cal.on { color: var(--amber); }
+  .ptab-cal svg { display: block; }
+  .pct-arrow { font-size: 8px; vertical-align: middle; margin-right: 1px; }
+
+  /* ── DATE RANGE PICKER ── */
+  .cal-picker-wrap { position: absolute; top: 48px; right: 0; z-index: 100; display: none; }
+  .cal-picker-wrap.open { display: block; }
+  .cal-picker { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; width: 260px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  .cal-pick-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-pick-month { font-size: 13px; font-weight: 700; }
+  .cal-nav { border: none; background: transparent; color: var(--muted2); font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+  .cal-nav:hover { background: var(--surface2); color: var(--text); }
+  .cal-dow-row { display: grid; grid-template-columns: repeat(7,1fr); margin-bottom: 4px; }
+  .cal-dow-cell { text-align: center; font-size: 9px; font-weight: 700; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+  .cal-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+  .cal-day { text-align: center; padding: 6px 2px; font-size: 11px; cursor: pointer; border-radius: 6px; transition: background .1s; color: var(--muted2); }
+  .cal-day:hover { background: var(--surface2); color: var(--text); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.empty:hover { background: transparent; }
+  .cal-day.today { font-weight: 800; color: var(--text); }
+  .cal-day.sel-start, .cal-day.sel-end { background: var(--accent); color: #fff; font-weight: 700; }
+  .cal-day.in-range { background: #1a2a4a; color: var(--text); border-radius: 0; }
+  .cal-day.sel-start { border-radius: 6px 0 0 6px; }
+  .cal-day.sel-end { border-radius: 0 6px 6px 0; }
+  .cal-day.sel-start.sel-end { border-radius: 6px; }
+  .cal-pick-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 10px; min-height: 16px; }
+  .cal-pick-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .cal-apply { flex: 1; padding: 8px; border-radius: 7px; border: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Public Sans', sans-serif; }
+  .cal-apply:disabled { opacity: .4; cursor: default; }
+  .cal-reset { padding: 8px 12px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted2); font-size: 12px; cursor: pointer; font-family: 'Public Sans', sans-serif; }
+  .mover-list { padding: 0; }
+  .mover-row { display: grid; grid-template-columns: 1fr 64px 90px 80px; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; align-items: center; transition: background .1s; }
+  .mover-row:hover { background: var(--surface2); }
+  .mover-info { min-width: 0; }
+  .mover-ticker { font-size: 12px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; position: relative; }
+  .mover-ticker span { display: inline-block; white-space: nowrap; }
+  .mover-source { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .mover-pct { text-align: right; min-width: 0; }
+  .pct-val { font-size: 14px; font-weight: 800; line-height: 1.1; white-space: nowrap; }
+  .pct-period { font-size: 9px; color: var(--muted); margin-top: 2px; white-space: normal; line-height: 1.3; }
+  .pct-val.up { color: var(--green); }
+  .pct-val.down { color: var(--red); }
+  .mover-chart { height: 40px; overflow: hidden; }
+  .mover-chart svg { width: 100%; height: 100%; display: block; }
+  .mover-spend { text-align: right; min-width: 0; }
+  .spend-val { font-size: 13px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+  .spend-period { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.3; white-space: normal; }
+
+  .topbar-icon-btn { width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--muted2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s; }
+  .topbar-icon-btn:hover { background:var(--surface2);color:var(--text); }
+  .search-wrap { overflow:hidden;max-width:0;transition:max-width .3s ease,opacity .3s ease;opacity:0; }
+  .search-wrap.open { max-width:220px;opacity:1; }
+  .search-input { background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;width:210px; }
+  .search-input:focus { border-color:var(--accent); }
+  .user-menu { position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:160px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:100;display:none; }
+  .user-menu.open { display:block; }
+  .user-menu-item { padding:11px 16px;font-size:13px;cursor:pointer;color:var(--muted2); }
+  .user-menu-item:hover { background:var(--surface2);color:var(--text); }
+  .user-menu-sep { border-top:1px solid var(--border);color:var(--red); }
+  scrollbar-width: thin;
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo" id="main-logo" style="cursor:pointer">Media Plus <span>Intelligence</span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;position:relative">
+      <div class="search-wrap" id="search-bar">
+        <input type="text" id="search-input" class="search-input" placeholder="Cerca azienda, segnale…">
+      </div>
+      <button class="topbar-icon-btn" id="search-icon-btn" title="Cerca">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+      </button>
+      <button class="topbar-icon-btn" id="user-btn" title="Account">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="5" r="3"/><path d="M1.5 14c0-3.314 2.686-5 6-5s6 1.686 6 5"/></svg>
+      </button>
+      <div class="user-menu" id="user-menu">
+        <div class="user-menu-item">⚙ Impostazioni</div>
+        <div class="user-menu-item user-menu-sep">↩ Logout</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="margin-top:14px">Fonti attive</div>
+      <div class="src-item active" data-category="all">
+        <div class="src-icon">📡</div>
+        <span class="src-name">Tutti i segnali</span>
+        <span class="src-count">47</span>
+      </div>
+      <div class="sidebar-label clickable" style="margin-top:14px" data-group="Online news">Online news</div>
+      <div class="src-item" data-category="online_news">
+        <div class="src-dot green"></div>
+        <span class="src-name">Google News TN/BZ</span>
+        <span class="src-count">18</span>
+      </div>
+      <div class="src-item" data-category="online_news">
+        <div class="src-dot green"></div>
+        <span class="src-name">Google News Nazionale</span>
+        <span class="src-count">4</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label clickable" data-group="Giornali online/offline">Giornali online/offline</div>
+      <div class="src-item" data-category="giornali">
+        <div class="src-dot green"></div>
+        <span class="src-name">L'Adige</span>
+        <span class="src-count">6</span>
+      </div>
+      <div class="src-item" data-category="giornali">
+        <div class="src-dot amber"></div>
+        <span class="src-name">Alto Adige</span>
+        <span class="src-count">3</span>
+      </div>
+      <div class="src-item" data-category="upload">
+        <div class="src-dot green"></div>
+        <span class="src-name">Prime pagine PDF</span>
+        <span class="src-count">2</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label clickable" data-group="Streaming TV">Streaming TV</div>
+      <div class="src-item" data-category="tv">
+        <div class="src-dot green"></div>
+        <span class="src-name">Trentino TV</span>
+        <span class="src-count">8</span>
+      </div>
+      <div class="src-item" data-category="tv">
+        <div class="src-dot green"></div>
+        <span class="src-name">Rete 4 Locale</span>
+        <span class="src-count">4</span>
+      </div>
+      <div class="src-item" data-category="tv">
+        <div class="src-dot red"></div>
+        <span class="src-name">TV2000</span>
+        <span class="src-count">0</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label clickable" data-group="Streaming Radio">Streaming Radio</div>
+      <div class="src-item" data-category="radio">
+        <div class="src-dot green"></div>
+        <span class="src-name">Radio Dolomiti</span>
+        <span class="src-count">5</span>
+      </div>
+      <div class="src-item" data-category="radio">
+        <div class="src-dot green"></div>
+        <span class="src-name">Radio Adige</span>
+        <span class="src-count">1</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label clickable" data-group="Social">Social</div>
+      <div class="src-item" data-category="social">
+        <div class="src-dot amber"></div>
+        <span class="src-name">Instagram</span>
+        <span class="src-count">3</span>
+      </div>
+      <div class="src-item" data-category="social">
+        <div class="src-dot green"></div>
+        <span class="src-name">Facebook</span>
+        <span class="src-count">1</span>
+      </div>
+      <div class="src-item" data-category="social">
+        <div class="src-dot green"></div>
+        <span class="src-name">X (Twitter)</span>
+        <span class="src-count">2</span>
+      </div>
+      <div class="src-item" data-category="social">
+        <div class="src-dot red"></div>
+        <span class="src-name">TikTok</span>
+        <span class="src-count">0</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label clickable" data-group="Altre fonti">Altre fonti</div>
+      <div class="src-item" data-category="cciaa">
+        <div class="src-dot green"></div>
+        <span class="src-name">Camera di Commercio TN</span>
+        <span class="src-count">2</span>
+      </div>
+      <div class="src-item" data-category="cciaa">
+        <div class="src-dot green"></div>
+        <span class="src-name">CCIAA Bolzano</span>
+        <span class="src-count">1</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="color:#f59e0b">⬆ Caricamenti manuali</div>
+      <div class="src-item" data-category="upload" class="src-upload">
+        <div class="src-icon">📄</div>
+        <span class="src-name">File caricati da te</span>
+        <span class="src-count">2</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN FEED -->
+  <div class="main" id="main-panel">
+
+    <!-- HEADER PERSISTENTE (nascosto solo nella vista azienda) -->
+    <div class="feed-header" id="source-header">
+      <div class="feed-header-top">
+        <div class="feed-title" id="feed-title">Tutti i segnali</div>
+        <div class="feed-count" id="feed-count">47 segnali</div>
+      </div>
+      <!-- Scheda tabs: visibili solo quando si seleziona una fonte specifica -->
+      <div class="scheda-tabs" id="scheda-tabs" style="display:none">
+        <button class="stab on" id="stab-segnali" onclick="switchToSegnali()">Scheda segnali</button>
+        <button class="stab" id="stab-mezzo" onclick="switchToMezzo()">Scheda mezzo</button>
+        <button class="stab" id="stab-listino" onclick="switchToListino()">Listino prezzi</button>
+      </div>
+    </div>
+
+    <!-- VISTA FEED (segnali) -->
+    <div id="view-feed">
+    <div class="feed-controls" style="padding:12px 20px;border-bottom:1px solid var(--border)">
+      <div class="time-chips">
+        <button class="time-chip on" data-time="24h">24h</button>
+        <button class="time-chip" data-time="48h">48h</button>
+        <button class="time-chip" data-time="settimana">Questa settimana</button>
+        <button class="time-chip" data-time="tutte">Tutte</button>
+      </div>
+      <div class="feed-selects">
+        <select class="feed-select" id="sort-select">
+          <option value="recente">↓ Più recente</option>
+          <option value="imp-desc">↓ Importanza decrescente</option>
+          <option value="imp-asc">↑ Importanza crescente</option>
+          <option value="azienda">A→Z Azienda</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SEGNALE 1 -->
+    <div class="signal-card" onclick="this.classList.toggle('open')">
+      <div class="sig-top">
+        <span class="sig-source tv">📺 TV</span>
+        <span class="sig-source" style="background:#1f2937;color:#94a3b8">Trentino TV</span>
+        <span class="sig-time">12 min fa</span>
+      </div>
+      <div class="sig-company">La Sportiva S.p.A.</div>
+      <div class="sig-desc">Rilevato spot pubblicitario 30" durante fascia prime time. Frequenza in aumento: +40% rispetto alla settimana scorsa.</div>
+      <div class="sig-bottom">
+        <span class="sig-badge alta">● Alta urgenza</span>
+        <div class="sig-freq">
+          <span>Frequenza:</span>
+          <div class="sparkline">
+            <div class="spark-bar" style="height:6px"></div>
+            <div class="spark-bar" style="height:9px"></div>
+            <div class="spark-bar" style="height:7px"></div>
+            <div class="spark-bar" style="height:11px"></div>
+            <div class="spark-bar" style="height:14px"></div>
+            <div class="spark-bar hi" style="height:18px"></div>
+          </div>
+          <span>↑ +40%</span>
+        </div>
+      </div>
+
+      <div class="sig-expand">
+        <div class="expand-grid">
+          <div class="expand-box">
+            <div class="expand-box-title">Perché è un segnale</div>
+            <p>La Sportiva ha aumentato la presenza su Trentino TV del 40% in 7 giorni. Budget stimato investito questa settimana: <strong style="color:#f59e0b">€ 2.100</strong>. Segnale di campagna attiva con budget in crescita — alta probabilità di interesse per nuovi formati.</p>
+          </div>
+          <div class="expand-box">
+            <div class="expand-box-title">Strategia consigliata</div>
+            <div class="strategy-item"><div class="strategy-num">1</div><div class="strategy-text">Contattare entro 5 giorni: sono in fase di spesa attiva e ricettivi.</div></div>
+            <div class="strategy-item"><div class="strategy-num">2</div><div class="strategy-text">Proporre un pacchetto complementare — non competere con la TV, offrire radio + digitale.</div></div>
+            <div class="strategy-item"><div class="strategy-num">3</div><div class="strategy-text">Usare i dati di frequenza come leva: "Vediamo che state investendo molto — vi mostriamo come raggiungere anche l'audience radio."</div></div>
+          </div>
+        </div>
+        <div class="expand-box">
+          <div class="expand-box-title">Prodotti suggeriti dall'AI</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="product-suggestion">
+              <div><div class="prod-name">Sponsorizzazione rubrica sport</div><div class="prod-why">Coerente con brand outdoor La Sportiva</div></div>
+              <div class="prod-price">€ 1.800/m</div>
+            </div>
+            <div class="product-suggestion">
+              <div><div class="prod-name">Spot Radio Dolomiti 30"</div><div class="prod-why">Audience sovrapposta, budget complementare</div></div>
+              <div class="prod-price">€ 950/m</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEGNALE 2 -->
+    <div class="signal-card" onclick="this.classList.toggle('open')">
+      <div class="sig-top">
+        <span class="sig-source cciaa">🏛 CCIAA</span>
+        <span class="sig-time">34 min fa</span>
+      </div>
+      <div class="sig-company">Centercasa Srl</div>
+      <div class="sig-desc">Nuova apertura registrata: sede secondaria a Rovereto. Capitale sociale aumentato di € 150.000.</div>
+      <div class="sig-bottom">
+        <span class="sig-badge alta">● Alta urgenza</span>
+        <div class="sig-freq">
+          <div class="sparkline">
+            <div class="spark-bar" style="height:5px"></div>
+            <div class="spark-bar" style="height:5px"></div>
+            <div class="spark-bar" style="height:8px"></div>
+            <div class="spark-bar" style="height:12px"></div>
+            <div class="spark-bar" style="height:10px"></div>
+            <div class="spark-bar hi" style="height:16px"></div>
+          </div>
+          <span style="color:var(--green)">Espansione in corso</span>
+        </div>
+      </div>
+      <div class="sig-expand">
+        <div class="expand-grid">
+          <div class="expand-box">
+            <div class="expand-box-title">Perché è un segnale</div>
+            <p>Apertura nuova sede → necessità di visibilità locale a Rovereto. Aumento capitale indica solidità finanziaria. Budget disponibile per advertising stimato alto.</p>
+          </div>
+          <div class="expand-box">
+            <div class="expand-box-title">Strategia</div>
+            <div class="strategy-item"><div class="strategy-num">1</div><div class="strategy-text">Proporre campagna di awareness per inaugurazione sede Rovereto.</div></div>
+            <div class="strategy-item"><div class="strategy-num">2</div><div class="strategy-text">Timing ideale: 3-4 settimane prima dell'apertura ufficiale.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEGNALE 3 -->
+    <div class="signal-card" onclick="this.classList.toggle('open')">
+      <div class="sig-top">
+        <span class="sig-source radio">📻 Radio</span>
+        <span class="sig-source" style="background:#1f2937;color:#94a3b8">Radio Dolomiti</span>
+        <span class="sig-time">1h 12m fa</span>
+      </div>
+      <div class="sig-company">Autocentro Trentino</div>
+      <div class="sig-desc">Spot rilevato in fascia mattutina (07:15–09:00). Terza occorrenza questa settimana. Settore automotive in evidenza.</div>
+      <div class="sig-bottom">
+        <span class="sig-badge media">● Media urgenza</span>
+        <div class="sig-freq">
+          <div class="sparkline">
+            <div class="spark-bar" style="height:8px"></div>
+            <div class="spark-bar" style="height:8px"></div>
+            <div class="spark-bar" style="height:8px"></div>
+            <div class="spark-bar" style="height:10px"></div>
+            <div class="spark-bar" style="height:10px"></div>
+            <div class="spark-bar" style="height:12px"></div>
+          </div>
+          <span>Stabile</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEGNALE 4 -->
+    <div class="signal-card" onclick="this.classList.toggle('open')">
+      <div class="sig-top">
+        <span class="sig-source upload">📄 Upload</span>
+        <span class="sig-time">2h fa</span>
+      </div>
+      <div class="sig-company">Melinda Consorzio</div>
+      <div class="sig-desc">Prima pagina L'Adige 01/07: annuncio campagna nazionale "Mela dell'Alto Adige". Budget stimato campagna: € 800K.</div>
+      <div class="sig-bottom">
+        <span class="sig-badge alta">● Alta urgenza</span>
+      </div>
+    </div>
+
+    <!-- SEGNALE 5 -->
+    <div class="signal-card" onclick="this.classList.toggle('open')">
+      <div class="sig-top">
+        <span class="sig-source social">📱 Social</span>
+        <span class="sig-source" style="background:#1f2937;color:#94a3b8">Instagram</span>
+        <span class="sig-time">3h fa</span>
+      </div>
+      <div class="sig-company">Fiemme Snowcat</div>
+      <div class="sig-desc">Picco anomalo di post sponsorizzati rilevato: +280% rispetto alla media. Campagna social attiva per lancio prodotto invernale.</div>
+      <div class="sig-bottom">
+        <span class="sig-badge media">● Media urgenza</span>
+        <div class="sig-freq">
+          <div class="sparkline">
+            <div class="spark-bar" style="height:4px"></div>
+            <div class="spark-bar" style="height:4px"></div>
+            <div class="spark-bar" style="height:5px"></div>
+            <div class="spark-bar" style="height:6px"></div>
+            <div class="spark-bar" style="height:18px"></div>
+            <div class="spark-bar hi" style="height:18px"></div>
+          </div>
+          <span style="color:var(--green)">↑ +280%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feed-pagination">
+      <button class="page-btn on">1</button>
+      <button class="page-btn">2</button>
+      <button class="page-btn">3</button>
+      <span class="page-dots">…</span>
+      <button class="page-btn">12</button>
+      <button class="page-btn" style="width:auto;padding:0 10px">→</button>
+    </div>
+    </div><!-- /view-feed -->
+
+    <!-- VISTA AZIENDA -->
+    <div id="view-company" style="display:none"></div>
+
+    <!-- VISTA MEZZO -->
+    <div id="view-mezzo" style="display:none"></div>
+
+    <!-- VISTA LISTINO -->
+    <div id="view-listino" style="display:none"></div>
+
+  </div>
+  <div class="rightpanel" id="rightpanel">
+    <div class="resize-handle" id="resize-handle"></div>
+    <div class="rp-header" style="position:relative">
+      <div class="rp-title">Top mover</div>
+      <div class="period-tabs">
+        <button class="ptab on" data-period="1D">1D</button>
+        <button class="ptab" data-period="7D">7D</button>
+        <button class="ptab" data-period="1M">1M</button>
+        <button class="ptab" data-period="6M">6M</button>
+        <button class="ptab" data-period="1A">1A</button>
+        <button class="ptab-cal" id="ptab-cal-btn" title="Periodo personalizzato"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2.5" width="12" height="10.5" rx="1.5"/><line x1="1" y1="6" x2="13" y2="6"/><line x1="4.5" y1="1" x2="4.5" y2="4"/><line x1="9.5" y1="1" x2="9.5" y2="4"/><line x1="4" y1="9" x2="4" y2="9" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="9" x2="7" y2="9" stroke-width="2"/><line x1="10" y1="9" x2="10" y2="9" stroke-width="2"/></svg></button>
+      </div>
+      <div class="cal-picker-wrap" id="cal-picker-wrap">
+        <div class="cal-picker">
+          <div class="cal-pick-header">
+            <button class="cal-nav" id="cal-prev">&#8249;</button>
+            <span class="cal-pick-month" id="cal-pick-month"></span>
+            <button class="cal-nav" id="cal-next">&#8250;</button>
+          </div>
+          <div class="cal-dow-row">
+            <div class="cal-dow-cell">L</div><div class="cal-dow-cell">M</div>
+            <div class="cal-dow-cell">M</div><div class="cal-dow-cell">G</div>
+            <div class="cal-dow-cell">V</div><div class="cal-dow-cell">S</div>
+            <div class="cal-dow-cell">D</div>
+          </div>
+          <div class="cal-days" id="cal-days"></div>
+          <div class="cal-pick-hint" id="cal-hint">Clicca per scegliere la data di inizio</div>
+          <div class="cal-pick-actions">
+            <button class="cal-reset" id="cal-reset">Azzera</button>
+            <button class="cal-apply" id="cal-apply" disabled>Applica</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mover-list" id="mover-list"></div>
+  </div>
+
+</div>
+<script>
+  // ── TIME CHIPS ──────────────────────────────────────────────────
+  document.querySelectorAll('.time-chip').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.time-chip').forEach(b => b.classList.remove('on'));
+      this.classList.add('on');
+      const map = {'24h':'47 segnali','48h':'89 segnali','settimana':'312 segnali','tutte':'2.140 segnali'};
+      document.getElementById('feed-count').textContent = map[this.dataset.time] || '47 segnali';
+    });
+  });
+  document.getElementById('sort-select').addEventListener('change', function(){});
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('on'));
+      if(this.textContent !== '→') this.classList.add('on');
+    });
+  });
+
+  // ── LOGO → Tutti i segnali ───────────────────────────────────────
+  document.getElementById('main-logo').addEventListener('click', () => {
+    showFeedCenter();
+    document.querySelectorAll('.src-item').forEach(i => i.classList.remove('active'));
+    document.querySelector('.src-item')?.classList.add('active');
+    document.getElementById('feed-title').textContent = 'Tutti i segnali';
+    document.getElementById('feed-count').textContent = '47 segnali';
+    const tabsLogo = document.getElementById('scheda-tabs'); if(tabsLogo) tabsLogo.style.display='none';
+  });
+
+  // ── USER MENU ───────────────────────────────────────────────────
+  document.getElementById('user-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('user-menu').classList.toggle('open');
+    document.getElementById('search-bar').classList.remove('open');
+  });
+  document.getElementById('search-icon-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('search-bar').classList.toggle('open');
+    document.getElementById('user-menu').classList.remove('open');
+    if(document.getElementById('search-bar').classList.contains('open'))
+      document.getElementById('search-input').focus();
+  });
+  document.addEventListener('click', () => {
+    document.getElementById('user-menu').classList.remove('open');
+    document.getElementById('search-bar').classList.remove('open');
+    const wrap = document.getElementById('cal-picker-wrap');
+    if(wrap) wrap.classList.remove('open');
+    const cvWrap = document.getElementById('cv-cal-wrap');
+    if(cvWrap) cvWrap.classList.remove('open');
+  });
+
+  // ── SIDEBAR: click sezione (titoli) ─────────────────────────────
+  document.querySelectorAll('.sidebar-label.clickable').forEach(label => {
+    label.addEventListener('click', function(){
+      document.querySelectorAll('.src-item').forEach(i => i.classList.remove('active'));
+      const group = this.dataset.group;
+      document.getElementById('feed-title').textContent = group;
+      let count = 0;
+      let el = this.nextElementSibling;
+      while(el && !el.classList.contains('sidebar-divider')){
+        if(el.classList.contains('sidebar-label')) break;
+        const cnt = el.querySelector('.src-count');
+        if(cnt) count += parseInt(cnt.textContent)||0;
+        el = el.nextElementSibling;
+      }
+      document.getElementById('feed-count').textContent = (count||'—')+' segnali';
+      const tabs2 = document.getElementById('scheda-tabs');
+      if(tabs2) tabs2.style.display = 'none';
+      showFeedCenter();
+    });
+  });
+
+  // Categorie che vendono spazio pubblicitario → hanno scheda mezzo + listino
+  const ADVERTISING_CATEGORIES = new Set(['tv','radio','giornali']);
+
+  // ── SIDEBAR: click singola fonte ────────────────────────────────
+  document.querySelectorAll('.src-item').forEach(item => {
+    item.addEventListener('click', function(){
+      document.querySelectorAll('.src-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+      const name = this.querySelector('.src-name');
+      const cat  = this.dataset.category || '';
+      const isAll = cat === 'all';
+      if(name){
+        document.getElementById('feed-title').textContent = name.textContent.trim();
+        const cnt = this.querySelector('.src-count');
+        document.getElementById('feed-count').textContent = cnt ? cnt.textContent+' segnali' : '';
+      }
+      // Scheda tabs: visibili solo per fonti specifiche
+      const tabs = document.getElementById('scheda-tabs');
+      if(tabs) tabs.style.display = isAll ? 'none' : 'flex';
+      // Scheda mezzo e Listino: solo per categorie pubblicitarie
+      const hasMedia = ADVERTISING_CATEGORIES.has(cat);
+      const stabMezzo   = document.getElementById('stab-mezzo');
+      const stabListino = document.getElementById('stab-listino');
+      if(stabMezzo)   stabMezzo.style.display   = hasMedia ? '' : 'none';
+      if(stabListino) stabListino.style.display  = hasMedia ? '' : 'none';
+      if(!isAll) currentMezzoName = name?.textContent.trim() || '';
+      showFeedCenter();
+    });
+  });
+
+  // ── RESIZE HANDLE ────────────────────────────────────────────────
+  const shell = document.querySelector('.shell');
+  let resizeStartX, resizeStartW;
+  function initResizeHandle(){
+    const handle = document.getElementById('resize-handle');
+    if(!handle) return;
+    handle.addEventListener('mousedown', e => {
+      resizeStartX = e.clientX;
+      resizeStartW = document.getElementById('rightpanel').getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      const onMove = ev => {
+        const dx = resizeStartX - ev.clientX;
+        const newW = Math.max(280, Math.min(680, resizeStartW + dx));
+        shell.style.gridTemplateColumns = '220px 1fr '+newW+'px';
+      };
+      const onUp = () => {
+        handle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // ── TOP MOVER DATA ──────────────────────────────────────────────
+  const periodLabels = {
+    '1D': 'nelle ultime 24h', '7D': "nell'ultima settimana",
+    '1M': "nell'ultimo mese", '6M': 'negli ultimi 6 mesi',
+    '1A': "nell'ultimo anno", 'CUSTOM': 'nel periodo selezionato',
+  };
+
+  const movers = [
+    { name: 'La Sportiva S.p.A.',              source: 'TV · Radio Dolomiti',
+      series: [40,42,38,50,48,62,65,72,68,85,80,95],
+      data: { '1D':{pct:40,spend:420}, '7D':{pct:40,spend:2940}, '1M':{pct:31,spend:11200}, '6M':{pct:24,spend:58000}, '1A':{pct:18,spend:108000}, 'CUSTOM':{pct:32,spend:3822} }},
+    { name: 'Centercasa Srl',                   source: 'Trentino TV',
+      series: [50,48,52,60,58,63,67,70,72,74,76,80],
+      data: { '1D':{pct:28,spend:504}, '7D':{pct:28,spend:2310}, '1M':{pct:20,spend:8400}, '6M':{pct:15,spend:42000}, '1A':{pct:12,spend:78000}, 'CUSTOM':{pct:22,spend:3003} }},
+    { name: 'Melinda Consorzio',                source: 'TV · Instagram',
+      series: [60,62,58,65,63,68,70,72,68,74,78,82],
+      data: { '1D':{pct:19,spend:315}, '7D':{pct:19,spend:2625}, '1M':{pct:14,spend:9800}, '6M':{pct:10,spend:48000}, '1A':{pct:8,spend:92000}, 'CUSTOM':{pct:15,spend:3413} }},
+    { name: 'Hydrogen Adige Valley Srl',        source: 'Google News',
+      series: [20,22,20,25,28,30,32,35,38,40,44,50],
+      data: { '1D':{pct:15,spend:210}, '7D':{pct:15,spend:1610}, '1M':{pct:11,spend:5800}, '6M':{pct:8,spend:28000}, '1A':{pct:6,spend:52000}, 'CUSTOM':{pct:12,spend:2093} }},
+    { name: 'Autocentro Trentino S.p.A.',       source: 'Radio Dolomiti',
+      series: [60,59,61,62,63,64,64,65,67,68,70,72],
+      data: { '1D':{pct:9,spend:84}, '7D':{pct:9,spend:1020}, '1M':{pct:6,spend:3800}, '6M':{pct:4,spend:18000}, '1A':{pct:3,spend:34000}, 'CUSTOM':{pct:7,spend:1326} }},
+    { name: 'Fiemme Snowcat Srl',               source: 'Instagram · Facebook',
+      series: [30,29,32,30,34,38,40,44,48,50,52,56],
+      data: { '1D':{pct:7,spend:60}, '7D':{pct:7,spend:920}, '1M':{pct:5,spend:3200}, '6M':{pct:3,spend:14000}, '1A':{pct:2,spend:26000}, 'CUSTOM':{pct:6,spend:1196} }},
+    { name: 'Manifattura Dolomiti Spa',         source: 'TV · Google News',
+      series: [44,46,43,48,51,53,57,59,61,63,64,66],
+      data: { '1D':{pct:6,spend:196}, '7D':{pct:6,spend:1370}, '1M':{pct:4,spend:5100}, '6M':{pct:3,spend:24000}, '1A':{pct:2,spend:46000}, 'CUSTOM':{pct:5,spend:1781} }},
+    { name: 'Consorzio Vini Trentino DOC',      source: 'Instagram · X',
+      series: [35,37,36,39,40,41,43,44,45,46,48,50],
+      data: { '1D':{pct:5,spend:88}, '7D':{pct:5,spend:1120}, '1M':{pct:4,spend:4200}, '6M':{pct:3,spend:20000}, '1A':{pct:2,spend:38000}, 'CUSTOM':{pct:4,spend:1456} }},
+    { name: 'Albergo Garda Resort Srl',         source: 'Facebook · TikTok',
+      series: [55,54,56,55,57,58,58,59,60,60,61,62],
+      data: { '1D':{pct:4,spend:140}, '7D':{pct:4,spend:980}, '1M':{pct:3,spend:3600}, '6M':{pct:2,spend:17500}, '1A':{pct:2,spend:33000}, 'CUSTOM':{pct:3,spend:1274} }},
+    { name: 'Edilcostruzioni Trento Srl',       source: 'Radio Adige',
+      series: [42,43,42,44,45,44,46,47,47,48,48,49],
+      data: { '1D':{pct:3,spend:70}, '7D':{pct:3,spend:840}, '1M':{pct:2,spend:3100}, '6M':{pct:2,spend:14800}, '1A':{pct:1,spend:28000}, 'CUSTOM':{pct:2,spend:1092} }},
+    { name: 'Studio Legale Bonetti e Associati',source: 'Google News · X',
+      series: [38,37,39,38,39,40,40,41,41,42,42,43],
+      data: { '1D':{pct:2,spend:44}, '7D':{pct:2,spend:560}, '1M':{pct:2,spend:2100}, '6M':{pct:1,spend:10000}, '1A':{pct:1,spend:19000}, 'CUSTOM':{pct:2,spend:728} }},
+    { name: 'Farmacia Centrale Bolzano',        source: 'Facebook',
+      series: [65,65,64,65,65,65,66,65,66,66,66,67],
+      data: { '1D':{pct:1,spend:28}, '7D':{pct:1,spend:350}, '1M':{pct:1,spend:1300}, '6M':{pct:1,spend:6200}, '1A':{pct:1,spend:11800}, 'CUSTOM':{pct:1,spend:455} }},
+    { name: 'Cantine Rotari S.p.A.',            source: 'Trentino TV',
+      series: [80,78,76,74,72,70,68,65,63,60,58,54],
+      data: { '1D':{pct:-8,spend:168}, '7D':{pct:-8,spend:1932}, '1M':{pct:-10,spend:7200}, '6M':{pct:-7,spend:36000}, '1A':{pct:-5,spend:68000}, 'CUSTOM':{pct:-6,spend:2512} }},
+    { name: 'APT Trento e Garda',               source: 'TV · Radio · Social',
+      series: [70,68,72,66,62,59,56,53,50,48,46,42],
+      data: { '1D':{pct:-12,spend:294}, '7D':{pct:-12,spend:2156}, '1M':{pct:-14,spend:8100}, '6M':{pct:-10,spend:40000}, '1A':{pct:-8,spend:76000}, 'CUSTOM':{pct:-10,spend:2803} }},
+    { name: 'Concessionaria BMW Rovereto',      source: 'Radio Dolomiti',
+      series: [75,72,70,68,65,63,60,58,55,53,50,47],
+      data: { '1D':{pct:-14,spend:210}, '7D':{pct:-14,spend:1470}, '1M':{pct:-16,spend:5500}, '6M':{pct:-12,spend:27000}, '1A':{pct:-10,spend:51000}, 'CUSTOM':{pct:-11,spend:1911} }},
+    { name: 'Ottica Alpe di Siusi',             source: 'Instagram',
+      series: [50,48,46,44,42,40,38,36,35,34,33,32],
+      data: { '1D':{pct:-15,spend:84}, '7D':{pct:-15,spend:588}, '1M':{pct:-17,spend:2200}, '6M':{pct:-14,spend:10500}, '1A':{pct:-12,spend:20000}, 'CUSTOM':{pct:-12,spend:764} }},
+    { name: 'Pizzeria Ristorante Da Marco',     source: 'Facebook · TikTok',
+      series: [60,58,55,52,50,48,45,43,42,40,39,38],
+      data: { '1D':{pct:-18,spend:56}, '7D':{pct:-18,spend:392}, '1M':{pct:-20,spend:1500}, '6M':{pct:-16,spend:7200}, '1A':{pct:-14,spend:13600}, 'CUSTOM':{pct:-14,spend:510} }},
+    { name: 'Scuola di Sci Val di Fassa',       source: 'Instagram · X · TikTok',
+      series: [80,77,73,70,66,62,58,55,51,48,44,40],
+      data: { '1D':{pct:-22,spend:126}, '7D':{pct:-22,spend:882}, '1M':{pct:-24,spend:3300}, '6M':{pct:-20,spend:16000}, '1A':{pct:-18,spend:30000}, 'CUSTOM':{pct:-18,spend:1147} }},
+    { name: 'Agenzia Immobiliare Alto Adige',   source: 'Google News · Facebook',
+      series: [70,66,62,58,54,50,46,43,40,37,34,30],
+      data: { '1D':{pct:-28,spend:168}, '7D':{pct:-28,spend:1176}, '1M':{pct:-30,spend:4400}, '6M':{pct:-25,spend:21000}, '1A':{pct:-22,spend:40000}, 'CUSTOM':{pct:-22,spend:1529} }},
+    { name: 'Centro Benessere Terme di Comano', source: 'TV · Radio · Instagram',
+      series: [85,80,74,68,62,57,51,46,41,36,31,26],
+      data: { '1D':{pct:-35,spend:294}, '7D':{pct:-35,spend:2058}, '1M':{pct:-38,spend:7700}, '6M':{pct:-32,spend:37000}, '1A':{pct:-28,spend:70000}, 'CUSTOM':{pct:-28,spend:2675} }},
+  ];
+
+  function makeSVGLine(series, color){
+    const w=90,h=40,pad=2;
+    const mn=Math.min(...series),mx=Math.max(...series),range=mx-mn||1;
+    const pts=series.map((v,i)=>{
+      const x=pad+(i/(series.length-1))*(w-pad*2);
+      const y=h-pad-((v-mn)/range)*(h-pad*2);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+    const fillPts=pad+','+(h-pad)+' '+pts+' '+(w-pad)+','+(h-pad);
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">'
+      +'<polygon points="'+fillPts+'" fill="'+color+'" opacity="0.12"/>'
+      +'<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
+      +'</svg>';
+  }
+
+  function fmt(n){ return '\u20ac\u00a0'+n.toLocaleString('it-IT'); }
+
+  function renderMovers(period){
+    const label = periodLabels[period];
+    const sorted = [...movers].sort((a,b)=>b.data[period].pct-a.data[period].pct);
+    const el = document.getElementById('mover-list');
+    if(!el) return;
+    el.innerHTML = sorted.map(m=>{
+      const d=m.data[period];
+      const up=d.pct>=0;
+      const color=up?'#10b981':'#ef4444';
+      const arrow=up?'\u25b2':'\u25bc';
+      const sign=up?'+':'';
+      return '<div class="mover-row">'
+        +'<div class="mover-info"><div class="mover-ticker"><span>'+m.name+'</span></div><div class="mover-source">'+m.source+'</div></div>'
+        +'<div class="mover-pct"><div class="pct-val '+(up?'up':'down')+'"><span class="pct-arrow">'+arrow+'</span> '+sign+d.pct+'%</div><div class="pct-period">'+label+'</div></div>'
+        +'<div class="mover-chart">'+makeSVGLine(m.series,color)+'</div>'
+        +'<div class="mover-spend"><div class="spend-val" style="color:'+color+'">'+fmt(d.spend)+'</div><div class="spend-period">'+label+'</div></div>'
+        +'</div>';
+    }).join('');
+    attachHoverScroll();
+  }
+
+  function attachHoverScroll(){
+    document.querySelectorAll('.mover-ticker').forEach(ticker=>{
+      const span=ticker.querySelector('span'); if(!span) return;
+      ticker.addEventListener('mouseenter',()=>{
+        const ov=span.scrollWidth-ticker.clientWidth;
+        if(ov>2){span.style.transition='transform '+Math.max(1.5,ov/60)+'s linear';span.style.transform='translateX(-'+ov+'px)';}
+      });
+      ticker.addEventListener('mouseleave',()=>{span.style.transition='transform 0.4s ease';span.style.transform='translateX(0)';});
+    });
+    document.querySelectorAll('.mover-row').forEach(row=>{
+      row.addEventListener('click',function(){
+        const nameEl=this.querySelector('.mover-ticker span'); if(!nameEl) return;
+        const mover=movers.find(m=>m.name===nameEl.textContent.trim());
+        if(mover) showCompanyCenter(mover,'Top mover');
+      });
+    });
+  }
+
+  // ── CALENDARIO (variabili condivise) ─────────────────────────────
+  const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  let calViewYear,calViewMonth,calStart=null,calEnd=null,calStep=0;
+  (function(){ const n=new Date(); calViewYear=n.getFullYear(); calViewMonth=n.getMonth(); })();
+  function isoDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function parseISO(s){ const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+  function fmtShortDate(s){ if(!s)return''; const d=parseISO(s); return d.getDate()+' '+MESI[d.getMonth()].slice(0,3)+' '+d.getFullYear(); }
+
+  function buildCalHTML(daysId, monthId, hintId, applyId){
+    const y=calViewYear,m=calViewMonth;
+    const monthEl=document.getElementById(monthId); if(!monthEl) return;
+    monthEl.textContent=MESI[m]+' '+y;
+    const firstDay=new Date(y,m,1).getDay();
+    const dim=new Date(y,m+1,0).getDate();
+    const todayISO=isoDate(new Date());
+    const offset=(firstDay===0)?6:firstDay-1;
+    let html='';
+    for(let i=0;i<offset;i++) html+='<div class="cal-day empty"></div>';
+    for(let dd=1;dd<=dim;dd++){
+      const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');
+      let cls='cal-day';
+      if(iso===todayISO) cls+=' today';
+      if(calStart&&iso===calStart) cls+=' sel-start';
+      if(calEnd&&iso===calEnd) cls+=' sel-end';
+      if(calStart&&calEnd&&iso>calStart&&iso<calEnd) cls+=' in-range';
+      html+='<div class="'+cls+'" data-date="'+iso+'">'+dd+'</div>';
+    }
+    const daysEl=document.getElementById(daysId); if(!daysEl) return;
+    daysEl.innerHTML=html;
+    const hint=document.getElementById(hintId);
+    if(hint){
+      if(calStep===0) hint.textContent='Clicca per scegliere la data di inizio';
+      else if(calStep===1) hint.textContent='Inizio: '+fmtShortDate(calStart)+' — clicca la data di fine';
+      else hint.textContent=fmtShortDate(calStart)+' \u2192 '+fmtShortDate(calEnd);
+    }
+    const applyEl=document.getElementById(applyId); if(applyEl) applyEl.disabled=!(calStart&&calEnd);
+    document.querySelectorAll('#'+daysId+' .cal-day:not(.empty)').forEach(cell=>{
+      cell.addEventListener('click',function(){
+        const date=this.dataset.date;
+        if(calStep===0){calStart=date;calEnd=null;calStep=1;}
+        else if(calStep===1){if(date<calStart){calEnd=calStart;calStart=date;}else{calEnd=date;}calStep=2;}
+        else{calStart=date;calEnd=null;calStep=1;}
+        buildCalHTML(daysId,monthId,hintId,applyId);
+      });
+    });
+  }
+
+  // ── CAL PICKER (destra) ──────────────────────────────────────────
+  function initCalPicker(){
+    const btn=document.getElementById('ptab-cal-btn'); if(!btn) return;
+    const wrap=document.getElementById('cal-picker-wrap'); if(!wrap) return;
+    btn.addEventListener('click',e=>{e.stopPropagation();const isOpen=wrap.classList.contains('open');wrap.classList.toggle('open');if(!isOpen){calStart=null;calEnd=null;calStep=0;buildCalHTML('cal-days','cal-pick-month','cal-hint','cal-apply');}});
+    wrap.addEventListener('click',e=>e.stopPropagation());
+    document.getElementById('cal-prev').addEventListener('click',()=>{calViewMonth--;if(calViewMonth<0){calViewMonth=11;calViewYear--;}buildCalHTML('cal-days','cal-pick-month','cal-hint','cal-apply');});
+    document.getElementById('cal-next').addEventListener('click',()=>{calViewMonth++;if(calViewMonth>11){calViewMonth=0;calViewYear++;}buildCalHTML('cal-days','cal-pick-month','cal-hint','cal-apply');});
+    document.getElementById('cal-reset').addEventListener('click',()=>{calStart=null;calEnd=null;calStep=0;buildCalHTML('cal-days','cal-pick-month','cal-hint','cal-apply');});
+    document.getElementById('cal-apply').addEventListener('click',()=>{
+      wrap.classList.remove('open');
+      document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on'); activePeriod='CUSTOM'; renderMovers('CUSTOM');
+    });
+    document.querySelectorAll('#rightpanel .ptab[data-period]').forEach(b=>{
+      b.addEventListener('click',function(){
+        document.querySelectorAll('#rightpanel .ptab').forEach(x=>x.classList.remove('on'));
+        document.getElementById('ptab-cal-btn').classList.remove('on');
+        wrap.classList.remove('open'); this.classList.add('on');
+        activePeriod=this.dataset.period; renderMovers(activePeriod);
+      });
+    });
+  }
+
+  // ── DATI MEZZO ───────────────────────────────────────────────────
+  const mezzoData = {
+    'Trentino TV': {
+      tipo:'Streaming TV', icona:'📺', priceUnit:'€/sec',
+      spots: {'1D':12,'7D':67,'1M':284,'6M':1240,'1A':2890},
+      fatturato: {'1D':504,'7D':2814,'1M':11928,'6M':52080,'1A':121380},
+      delta: {'1D':8,'7D':8,'1M':10,'6M':7,'1A':5},
+      inserzionisti: 12,
+      serie: [40,45,38,52,55,60,58,65,70,72,75,80],
+      prezziario: [
+        {f:'Spot 30"', p:'€1.40/sec'}, {f:'Spot 15"', p:'€1.20/sec'},
+        {f:'Sponsorizzazione rubrica', p:'€1.800/mese'}, {f:'Breaking news', p:'€2.50/sec'},
+      ],
+      formati: ['Tutte le fasce','Prime time','Mattina','Pomeriggio','Sera','Notte'],
+      topAdv: [
+        {name:'La Sportiva S.p.A.',spots:42,spend:5880,pct:40},
+        {name:'Centercasa Srl',spots:31,spend:4340,pct:28},
+        {name:'Melinda Consorzio',spots:22,spend:3080,pct:19},
+        {name:'APT Trento e Garda',spots:18,spend:2520,pct:-12},
+        {name:'Cantine Rotari S.p.A.',spots:15,spend:2100,pct:-8},
+        {name:'Autocentro Trentino S.p.A.',spots:10,spend:1400,pct:3},
+      ]
+    },
+    'Radio Dolomiti': {
+      tipo:'Streaming Radio', icona:'📻', priceUnit:'€/sec',
+      spots: {'1D':8,'7D':41,'1M':156,'6M':680,'1A':1580},
+      fatturato: {'1D':84,'7D':431,'1M':1638,'6M':7140,'1A':16590},
+      delta: {'1D':6,'7D':6,'1M':8,'6M':5,'1A':3},
+      inserzionisti: 8,
+      serie: [55,52,58,60,58,62,65,68,65,70,72,75],
+      prezziario: [
+        {f:'Spot 30"', p:'€0.35/sec'}, {f:'Spot 20"', p:'€0.30/sec'},
+        {f:'Jingle 10"', p:'€0.25/sec'}, {f:'Sponsored news', p:'€600/mese'},
+      ],
+      formati: ['Tutte le fasce','Morning','Giornale radio','Drive time','Sera'],
+      topAdv: [
+        {name:'La Sportiva S.p.A.',spots:38,spend:3990,pct:40},
+        {name:'Autocentro Trentino S.p.A.',spots:29,spend:3045,pct:9},
+        {name:'APT Trento e Garda',spots:22,spend:2310,pct:-12},
+        {name:'Concessionaria BMW Rovereto',spots:18,spend:1890,pct:-14},
+        {name:'Edilcostruzioni Trento Srl',spots:12,spend:1260,pct:3},
+      ]
+    },
+    "L'Adige": {
+      tipo:'Giornali online/offline', icona:'📰', priceUnit:'€/pagina',
+      spots: {'1D':1,'7D':5,'1M':18,'6M':72,'1A':156},
+      fatturato: {'1D':800,'7D':4000,'1M':14400,'6M':57600,'1A':124800},
+      delta: {'1D':5,'7D':5,'1M':7,'6M':4,'1A':2},
+      inserzionisti: 6,
+      serie: [30,32,28,35,38,40,42,44,45,48,50,52],
+      prezziario: [
+        {f:'Pagina intera', p:'€800'}, {f:'Mezza pagina', p:'€480'},
+        {f:'Quarto di pagina', p:'€280'}, {f:'Banner digitale', p:'€150/sett'},
+      ],
+      formati: ['Tutte','Prima pagina','Economia','Sport','Cronaca'],
+      topAdv: [
+        {name:'Centercasa Srl',spots:4,spend:3200,pct:20},
+        {name:'Hydrogen Adige Valley Srl',spots:3,spend:2400,pct:15},
+        {name:'Farmacia Centrale Bolzano',spots:2,spend:1600,pct:1},
+        {name:'Studio Legale Bonetti e Assoc.',spots:2,spend:1600,pct:2},
+      ]
+    },
+    'Google News TN/BZ': {
+      tipo:'Online news', icona:'🌐', priceUnit:'CPM',
+      spots: {'1D':18,'7D':94,'1M':380,'6M':1640,'1A':3820},
+      fatturato: {'1D':90,'7D':470,'1M':1900,'6M':8200,'1A':19100},
+      delta: {'1D':12,'7D':12,'1M':15,'6M':10,'1A':8},
+      inserzionisti: 9,
+      serie: [20,22,25,28,30,32,35,38,40,42,44,47],
+      prezziario: [
+        {f:'Display CPM', p:'€5/1000 imp'}, {f:'Search ads', p:'€0.80/click'},
+        {f:'Sponsored article', p:'€350'}, {f:'Newsletter', p:'€200/invio'},
+      ],
+      formati: ['Tutti','Notizie locali','Business','Politica','Sport'],
+      topAdv: [
+        {name:'Hydrogen Adige Valley Srl',spots:38,spend:3420,pct:15},
+        {name:'Manifattura Dolomiti Spa',spots:28,spend:2520,pct:6},
+        {name:'Studio Legale Bonetti e Assoc.',spots:20,spend:1800,pct:2},
+        {name:'Agenzia Immobiliare Alto Adige',spots:18,spend:1620,pct:-28},
+        {name:'Consorzio Vini Trentino DOC',spots:15,spend:1350,pct:5},
+      ]
+    },
+  };
+
+  // Fallback per fonti senza scheda dettagliata
+  function getMezzoData(name){
+    return mezzoData[name] || {
+      tipo:'Fonte', icona:'📡', priceUnit:'—',
+      spots:{'1D':3,'7D':18,'1M':72,'6M':310,'1A':720},
+      fatturato:{'1D':150,'7D':900,'1M':3600,'6M':15500,'1A':36000},
+      delta:{'1D':5,'7D':5,'1M':6,'6M':4,'1A':3},
+      inserzionisti:4,
+      serie:[30,32,35,38,40,42,44,45,46,48,50,52],
+      prezziario:[{f:'Formato standard', p:'—'}],
+      formati:['Tutte'],
+      topAdv:[{name:'Azienda A',spots:10,spend:1500,pct:8},{name:'Azienda B',spots:6,spend:900,pct:-3}]
+    };
+  }
+
+  // ── DATI LISTINO PER MEZZO ──────────────────────────────────────
+  const listinoData = {
+    'Trentino TV': {
+      formati: [
+        {nome:'Spot 30"',specs:'Durata 30 sec, HD',durata:'30″',prezzo:'€42,00',unit:'al passaggio',note:'Prezzo netto'},
+        {nome:'Spot 15"',specs:'Durata 15 sec, HD',durata:'15″',prezzo:'€28,00',unit:'al passaggio',note:''},
+        {nome:'Spot 10"',specs:'Durata 10 sec, promo',durata:'10″',prezzo:'€18,00',unit:'al passaggio',note:'Min. 10 passaggi'},
+        {nome:'Sponsorizzazione rubrica',specs:'Jingle + logo durante rubrica',durata:'—',prezzo:'€1.800',unit:'al mese',note:'Esclusiva di settore'},
+        {nome:'Telepromozione',specs:'Contenuto redazionale con prodotto',durata:'60″',prezzo:'€120',unit:'al passaggio',note:'Max 2/giorno'},
+        {nome:'Breaking news (sovraimpressione)',specs:'Ticker in fascia news',durata:'10″',prezzo:'€2,50',unit:'al secondo',note:'Solo fasce news'},
+      ]
+    },
+    'Radio Dolomiti': {
+      formati: [
+        {nome:'Spot 30"',specs:'Audio stereo, voce + musica',durata:'30″',prezzo:'€10,50',unit:'al passaggio',note:''},
+        {nome:'Spot 20"',specs:'Audio stereo',durata:'20″',prezzo:'€7,00',unit:'al passaggio',note:''},
+        {nome:'Jingle 10"',specs:'Solo jingle / claim',durata:'10″',prezzo:'€4,50',unit:'al passaggio',note:'Min. 5 passaggi'},
+        {nome:'Sponsored news',specs:'Citazione in apertura del giornale radio',durata:'—',prezzo:'€600',unit:'al mese',note:'Solo mattino 07:00–09:00'},
+        {nome:'Intervista/Redazionale',specs:'Intervista o redazionale di 2 minuti',durata:'2′',prezzo:'€350',unit:'al passaggio',note:'Su appuntamento'},
+      ]
+    },
+    "L'Adige": {
+      formati: [
+        {nome:'Pagina intera',specs:'297x420mm, 4 colori',durata:'—',prezzo:'€800',unit:'a uscita',note:'Prenotazione 5gg prima'},
+        {nome:'Mezza pagina orizzontale',specs:'297x210mm',durata:'—',prezzo:'€480',unit:'a uscita',note:''},
+        {nome:'Quarto di pagina',specs:'148x210mm',durata:'—',prezzo:'€280',unit:'a uscita',note:''},
+        {nome:'Banner digitale (ladige.it)',specs:'728x90px, rotazione',durata:'—',prezzo:'€150',unit:'a settimana',note:'Traffico certificato'},
+        {nome:'Articolo sponsorizzato',specs:'Redazionale con foto, online',durata:'—',prezzo:'€350',unit:'a pubblicazione',note:'Max 1/settimana per inserzionista'},
+      ]
+    },
+    'Google News TN/BZ': {
+      formati: [
+        {nome:'Display CPM',specs:'Banner 300x250px, 728x90px',durata:'—',prezzo:'€5,00',unit:'/1.000 imp.',note:'Targeting geografico incluso'},
+        {nome:'Search Ads',specs:'Annuncio testo sui risultati di ricerca',durata:'—',prezzo:'€0,80',unit:'per click',note:'CPC medio stimato'},
+        {nome:'Articolo sponsorizzato',specs:'Contenuto nativo in evidenza',durata:'—',prezzo:'€350',unit:'a pubblicazione',note:''},
+        {nome:'Newsletter sponsorizzata',specs:'Menzione in apertura newsletter',durata:'—',prezzo:'€200',unit:'a invio',note:'~8.000 iscritti'},
+      ]
+    },
+  };
+
+  function getListinoData(name){
+    return listinoData[name] || {
+      formati:[{nome:'Formato standard',specs:'Contattare per dettagli',durata:'—',prezzo:'—',unit:'—',note:''}]
+    };
+  }
+
+  function switchToListino(){
+    document.getElementById('view-feed').style.display='none';
+    document.getElementById('view-mezzo').style.display='none';
+    document.getElementById('view-listino').style.display='block';
+    document.getElementById('stab-segnali').classList.remove('on');
+    document.getElementById('stab-mezzo').classList.remove('on');
+    document.getElementById('stab-listino').classList.add('on');
+    renderListinoView(currentMezzoName);
+  }
+
+  function renderListinoView(name){
+    const ld = getListinoData(name);
+    const rowsHtml = ld.formati.map(f=>
+      '<div class="listino-row">'
+        +'<div><div class="listino-formato">'+f.nome+'</div><div class="listino-specs">'+f.specs+'</div></div>'
+        +'<div class="listino-durata">'+f.durata+'</div>'
+        +'<div><div class="listino-prezzo">'+f.prezzo+'</div><div class="listino-unit">'+f.unit+'</div></div>'
+        +'<div class="listino-note">'+f.note+'</div>'
+        +'<button class="listino-edit" title="Modifica">&#9998;</button>'
+      +'</div>'
+    ).join('');
+
+    document.getElementById('view-listino').innerHTML =
+      '<div class="listino-section">'
+        +'<div class="listino-section-title"><span>Formati pubblicitari</span><button class="btn-add-price">+ Aggiungi formato</button></div>'
+        +'<div class="listino-header"><span>Formato</span><span>Durata</span><span>Prezzo</span><span>Note</span><span></span></div>'
+        +rowsHtml
+        +'</div>';
+  }
+
+  // ── NAVIGAZIONE MEZZO ─────────────────────────────────────────────
+  let currentMezzoName = '';
+  let currentMezzoPeriod = '1A';
+
+  function showFeedCenter(){
+    document.getElementById('source-header').style.display='block';
+    document.getElementById('view-feed').style.display='block';
+    document.getElementById('view-company').style.display='none';
+    document.getElementById('view-mezzo').style.display='none';
+    document.getElementById('view-listino').style.display='none';
+    document.getElementById('main-panel').scrollTop=0;
+    document.getElementById('stab-segnali').classList.add('on');
+    document.getElementById('stab-mezzo').classList.remove('on');
+    document.getElementById('stab-listino').classList.remove('on');
+  }
+
+  function switchToSegnali(){
+    document.getElementById('view-feed').style.display='block';
+    document.getElementById('view-mezzo').style.display='none';
+    document.getElementById('view-listino').style.display='none';
+    document.getElementById('stab-segnali').classList.add('on');
+    document.getElementById('stab-mezzo').classList.remove('on');
+    document.getElementById('stab-listino').classList.remove('on');
+  }
+
+  function switchToMezzo(){
+    document.getElementById('view-feed').style.display='none';
+    document.getElementById('view-listino').style.display='none';
+    document.getElementById('view-mezzo').style.display='block';
+    document.getElementById('stab-segnali').classList.remove('on');
+    document.getElementById('stab-mezzo').classList.add('on');
+    document.getElementById('stab-listino').classList.remove('on');
+    showMezzoCenter(currentMezzoName);
+  }
+
+  function showMezzoCenter(name){
+    currentMezzoName = name;
+    const m = getMezzoData(name);
+    const period = currentMezzoPeriod;
+    renderMezzoView(name, m, period);
+    document.getElementById('source-header').style.display='block';
+    document.getElementById('view-feed').style.display='none';
+    document.getElementById('view-company').style.display='none';
+    document.getElementById('view-mezzo').style.display='block';
+    document.getElementById('stab-segnali').classList.remove('on');
+    document.getElementById('stab-mezzo').classList.add('on');
+    document.getElementById('main-panel').scrollTop=0;
+  }
+
+  function renderMezzoView(name, m, period){
+    const fat = m.fatturato[period]||0;
+    const spots = m.spots[period]||0;
+    const delta = m.delta[period]||0;
+    const up = delta>=0;
+    const c = up?'#10b981':'#ef4444';
+    const sign = up?'+':'';
+    const periodLbl = {'1D':'ultime 24h','7D':'ultima sett.','1M':'ultimo mese','6M':'ultimi 6 mesi','1A':'ultimo anno','CUSTOM':'periodo sel.'}[period]||period;
+
+    const calSVGsmall = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2.5" width="12" height="10.5" rx="1.5"/><line x1="1" y1="6" x2="13" y2="6"/><line x1="4.5" y1="1" x2="4.5" y2="4"/><line x1="9.5" y1="1" x2="9.5" y2="4"/></svg>';
+
+    const periodTabsHtml =
+      ['1D','7D','1M','6M','1A'].map(p=>
+        '<button class="ptab'+(p===period?' on':'')+'" onclick="mezzoChangePeriod(\''+p+'\')">'+p+'</button>'
+      ).join('')
+      +'<button class="ptab-cal" onclick="void(0)" style="display:flex;align-items:center" title="Personalizzato">'+calSVGsmall+'</button>';
+
+    const formatiHtml = m.formati.map((f,i)=>
+      '<button class="mftab'+(i===0?' on':'')+'" onclick="mezzoFascia(this)">'+f+'</button>'
+    ).join('');
+
+    // grafico fatturato stimato
+    const mezzoPeriodSeries = resampleAndScale(m.serie, PERIOD_POINTS[period]||12, fat/(PERIOD_POINTS[period]||12));
+    const chartHtml = makeBigSVG(mezzoPeriodSeries, c, period);
+
+    // lista inserzionisti con barra proporzionale
+    const maxSpend = Math.max(...m.topAdv.map(a=>a.spend));
+    const advHtml = m.topAdv.map(a=>{
+      const aUp = a.pct>=0; const aC = aUp?'#10b981':'#ef4444';
+      const pct = Math.round(a.spend/maxSpend*100);
+      return '<div class="adv-row" onclick="advClick(\''+a.name+'\')">'
+        +'<div class="adv-name">'+a.name+'</div>'
+        +'<div class="adv-bar-wrap"><div class="adv-bar" style="width:'+pct+'%;background:'+aC+'"></div></div>'
+        +'<div class="adv-spots">'+a.spots+' spot</div>'
+        +'<div class="adv-spend">\u20ac'+a.spend.toLocaleString('it-IT')+'</div>'
+        +'<div class="adv-delta" style="color:'+aC+'">'+(aUp?'\u25b2':'\u25bc')+' '+(aUp?'+':'')+a.pct+'%</div>'
+        +'</div>';
+    }).join('');
+
+    // prezziario
+    const prezzHtml = m.prezziario.map(p=>
+      '<div class="prezzo-item"><span class="prezzo-formato">'+p.f+'</span><span class="prezzo-val">'+p.p+'</span></div>'
+    ).join('');
+
+    document.getElementById('view-mezzo').innerHTML =
+      '<div class="cv-back" onclick="switchToSegnali()">\u2190 Segnali: '+name+'</div>'
+      +'<div class="mezzo-hero">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px">'
+          +'<div class="mezzo-tipo">'+m.icona+' '+m.tipo+'</div>'
+          +'<div style="display:flex;align-items:center;gap:2px" id="mezzo-period-tabs">'+periodTabsHtml+'</div>'
+        +'</div>'
+        +'<div class="mezzo-format-tabs" id="mezzo-format-tabs">'+formatiHtml+'</div>'
+        +'<div class="mezzo-stats">'
+          +'<div class="mezzo-stat-card"><div class="mezzo-stat-val" style="color:'+c+'">\u20ac'+fat.toLocaleString('it-IT')+'</div><div class="mezzo-stat-lbl">fatturato stimato ('+periodLbl+')</div></div>'
+          +'<div class="mezzo-stat-card"><div class="mezzo-stat-val">'+spots+'</div><div class="mezzo-stat-lbl">spot / inserzioni ('+periodLbl+')</div></div>'
+          +'<div class="mezzo-stat-card"><div class="mezzo-stat-val">'+m.inserzionisti+'</div><div class="mezzo-stat-lbl">inserzionisti attivi</div></div>'
+          +'<div class="mezzo-stat-card"><div class="mezzo-stat-val" style="color:'+c+'">'+(sign)+delta+'%</div><div class="mezzo-stat-lbl">variazione vs periodo prec.</div></div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="cv-chart-section"><div class="cv-big-chart">'+chartHtml+'</div></div>'
+      +'<div class="mezzo-section-title">Inserzionisti attivi</div>'
+      +'<div style="padding-bottom:16px">'+advHtml+'</div>'
+      ;
+  }
+
+  function mezzoChangePeriod(p){
+    currentMezzoPeriod = p;
+    showMezzoCenter(currentMezzoName);
+  }
+  function mezzoFascia(btn){
+    document.querySelectorAll('.mftab').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  function advClick(name){
+    const mover = movers.find(m=>m.name===name||m.name.startsWith(name.split(' ')[0]));
+    if(mover) showCompanyCenter(mover, currentMezzoName);
+  }
+
+  // ── SCHEDA AZIENDA ───────────────────────────────────────────────
+  const SOURCE_CATEGORIES=['Tutte','Online news','Giornali online/offline','Streaming TV','Streaming Radio','Social','Altre fonti','Caricamenti manuali'];
+  const cvPeriodLabels={'1D':'variazione 24h','7D':'variazione 7gg','1M':'variazione mensile','6M':'variazione 6 mesi','1A':'variazione annua','CUSTOM':'nel periodo sel.'};
+  const cvSpendLabels={'1D':'spesa 24h','7D':'spesa 7gg','1M':'spesa mensile','6M':'spesa 6 mesi','1A':'spesa annua','CUSTOM':'spesa periodo'};
+
+  // ── PERIODO: punti e label dinamiche ────────────────────────────
+  const PERIOD_POINTS = {'1D':24,'7D':7,'1M':30,'6M':26,'1A':12,'CUSTOM':12};
+
+  // Calcola le label dell'asse X dalla data reale (oggi = 1 luglio 2026)
+  function getLabels(period){
+    const today = new Date(2026,6,1); // 1 luglio 2026
+    const MS = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+    if(period==='1D'){
+      // 24 punti, un'ora ciascuno, label ogni 4 ore
+      return Array.from({length:24},(_,i)=> i%4===0 ? String(i).padStart(2,'0')+':00' : '');
+    }
+    if(period==='7D'){
+      // 7 punti, un giorno ciascuno, oggi come ultimo
+      return Array.from({length:7},(_,i)=>{
+        const d=new Date(today); d.setDate(d.getDate()-(6-i));
+        return d.getDate()+'\u00a0'+MS[d.getMonth()];
+      });
+    }
+    if(period==='1M'){
+      // 30 punti, un giorno ciascuno, oggi come ultimo, label ogni 5 giorni
+      return Array.from({length:30},(_,i)=>{
+        const d=new Date(today); d.setDate(d.getDate()-(29-i));
+        return (i%5===0||i===29) ? d.getDate()+'\u00a0'+MS[d.getMonth()] : '';
+      });
+    }
+    if(period==='6M'){
+      // 26 punti settimanali, oggi come ultimo, label ogni 4 settimane
+      return Array.from({length:26},(_,i)=>{
+        const d=new Date(today); d.setDate(d.getDate()-(25-i)*7);
+        return (i%4===0||i===25) ? d.getDate()+'\u00a0'+MS[d.getMonth()] : '';
+      });
+    }
+    if(period==='1A'){
+      // 12 punti mensili, mese corrente come ultimo
+      return Array.from({length:12},(_,i)=>{
+        const d=new Date(today); d.setMonth(d.getMonth()-(11-i));
+        return MS[d.getMonth()]+(d.getFullYear()!==2026?'\u00a0'+(d.getFullYear()%100):'');
+      });
+    }
+    return ['Inizio',...Array(10).fill(''),'Fine'];
+  }
+
+  // Ricampiona la curva (12 pt) su n punti e scala al valore medio target
+  function resampleAndScale(baseSeries, n, targetAvg){
+    const srcN=baseSeries.length;
+    const srcAvg=baseSeries.reduce((a,b)=>a+b,0)/srcN||1;
+    const scale=targetAvg/srcAvg;
+    return Array.from({length:n},(_,i)=>{
+      const pos=(n<=1?0:i/(n-1))*(srcN-1);
+      const lo=Math.floor(pos), hi=Math.min(srcN-1,lo+1);
+      const frac=pos-lo;
+      return Math.max(1, Math.round((baseSeries[lo]*(1-frac)+baseSeries[hi]*frac)*scale));
+    });
+  }
+
+  // Proporzione per categoria (0 = nessun dato)
+  function catFactor(mover,cat){
+    if(cat==='Tutte') return 1;
+    const a=mover.source.toLowerCase();
+    if(cat==='Streaming TV'&&a.includes('tv')) return 0.6;
+    if(cat==='Streaming Radio'&&a.includes('radio')) return 0.4;
+    if(cat==='Online news'&&a.includes('news')) return 0.2;
+    if(cat==='Social'&&(a.includes('instagram')||a.includes('facebook')||a.includes('tiktok')||a.includes('x ('))) return 0.3;
+    if(cat==='Giornali online/offline'&&a.includes('adige')) return 0.15;
+    return 0;
+  }
+
+  function seriesForPeriodAndCategory(mover,period,cat){
+    const n=PERIOD_POINTS[period]||12;
+    const d=mover.data[period]||mover.data['7D'];
+    const base=resampleAndScale(mover.series, n, d.spend/n);
+    const f=catFactor(mover,cat);
+    if(f===0) return Array(n).fill(0);
+    return f===1 ? base : base.map(v=>Math.max(1,Math.round(v*f)));
+  }
+
+  // Manteniamo alias per compatibilità con eventuali chiamate legacy
+  function seriesForCategory(mover,cat){
+    return seriesForPeriodAndCategory(mover,'7D',cat);
+  }
+
+  function makeBigSVG(series,color,period){
+    period=period||'7D';
+    const W=700,H=190,padL=46,padR=14,padT=14,padB=30;
+    const n=series.length;
+    const mn=Math.min(...series),mx=Math.max(...series),range=mx-mn||1;
+    const pts=series.map((v,i)=>{
+      const x=padL+(n<=1?0:i/(n-1))*(W-padL-padR);
+      const y=padT+(1-(v-mn)/range)*(H-padT-padB);
+      return [x.toFixed(1),y.toFixed(1)];
+    });
+    const polyPts=pts.map(p=>p.join(',')).join(' ');
+    const fillPts=padL+','+(H-padB)+' '+polyPts+' '+(W-padR)+','+(H-padB);
+    const gridLines=[0,.25,.5,.75,1].map(t=>{
+      const y=(padT+(1-t)*(H-padT-padB)).toFixed(1);
+      const val=Math.round(mn+t*range);
+      return '<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/>'
+        +'<text x="'+(padL-6)+'" y="'+y+'" fill="var(--muted)" font-size="9" text-anchor="end" dominant-baseline="middle">\u20ac'+(val>=1000?(val/1000).toFixed(1)+'k':val)+'</text>';
+    }).join('');
+    const r=n<=10?3.5:n<=24?2.5:1.5;
+    const dots=pts.map(([x,y],i)=>'<circle cx="'+x+'" cy="'+y+'" r="'+(i===n-1?4:r)+'" fill="'+(i===n-1?color:'var(--bg)')+'" stroke="'+color+'" stroke-width="1.5"/>').join('');
+    const labels=getLabels(period);
+    const xLabels=pts.map(([x],i)=>labels[i]?'<text x="'+x+'" y="'+(H-padB+14)+'" fill="var(--muted)" font-size="9" text-anchor="middle">'+labels[i]+'</text>':'').join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'
+      +gridLines
+      +'<polygon points="'+fillPts+'" fill="'+color+'" opacity="0.1"/>'
+      +'<polyline points="'+polyPts+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+      +dots+xLabels+'</svg>';
+  }
+
+  const calSVG='<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2.5" width="12" height="10.5" rx="1.5"/><line x1="1" y1="6" x2="13" y2="6"/><line x1="4.5" y1="1" x2="4.5" y2="4"/><line x1="9.5" y1="1" x2="9.5" y2="4"/><line x1="4" y1="9" x2="4" y2="9" stroke-width="2"/><line x1="7" y1="9" x2="7" y2="9" stroke-width="2"/><line x1="10" y1="9" x2="10" y2="9" stroke-width="2"/></svg>';
+
+  function showCompanyCenter(mover,fromLabel){
+    centerBackLabel=fromLabel||'Tutti i segnali';
+    const initPeriod='7D';
+    const d=mover.data[initPeriod];
+    const up=d.pct>=0; const color=up?'#10b981':'#ef4444'; const sign=up?'+':'';
+    const defaultCat=SOURCE_CATEGORIES.includes(fromLabel)?fromLabel:'Tutte';
+    const tabsHtml=SOURCE_CATEGORIES.map(cat=>'<button class="cv-stab'+(cat===defaultCat?' on':'')+'" onclick="cvSwitchTab(this,\''+cat+'\')">'+cat+'</button>').join('');
+    const initSeries=seriesForPeriodAndCategory(mover,initPeriod,defaultCat);
+    const initColor=initSeries.every(v=>v===0)?'#475569':color;
+
+    document.getElementById('view-company').innerHTML=
+      '<div class="cv-back" onclick="showFeedCenter()">\u2190 '+centerBackLabel+'</div>'
+      +'<div class="cv-hero">'
+        // riga 1: nome (sx) + selettori periodo (dx)
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px">'
+          +'<div class="cv-name">'+mover.name+'</div>'
+          +'<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;padding-top:6px;position:relative"'
+            +' id="cv-period-tabs" data-mover-name="'+mover.name+'" data-period="'+initPeriod+'">'
+            +'<button class="ptab" data-cvp="1D">1D</button>'
+            +'<button class="ptab on" data-cvp="7D">7D</button>'
+            +'<button class="ptab" data-cvp="1M">1M</button>'
+            +'<button class="ptab" data-cvp="6M">6M</button>'
+            +'<button class="ptab" data-cvp="1A">1A</button>'
+            +'<button class="ptab-cal" id="cv-cal-btn" style="display:flex;align-items:center" title="Periodo personalizzato">'+calSVG+'</button>'
+            +'<div class="cal-picker-wrap" id="cv-cal-wrap">'
+              +'<div class="cal-picker">'
+                +'<div class="cal-pick-header"><button class="cal-nav" id="cv-cal-prev">\u2039</button><span class="cal-pick-month" id="cv-cal-month"></span><button class="cal-nav" id="cv-cal-next">\u203a</button></div>'
+                +'<div class="cal-dow-row"><div class="cal-dow-cell">L</div><div class="cal-dow-cell">M</div><div class="cal-dow-cell">M</div><div class="cal-dow-cell">G</div><div class="cal-dow-cell">V</div><div class="cal-dow-cell">S</div><div class="cal-dow-cell">D</div></div>'
+                +'<div class="cal-days" id="cv-cal-days"></div>'
+                +'<div class="cal-pick-hint" id="cv-cal-hint"></div>'
+                +'<div class="cal-pick-actions"><button class="cal-reset" id="cv-cal-reset">Azzera</button><button class="cal-apply" id="cv-cal-apply" disabled>Applica</button></div>'
+              +'</div>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
+        // riga 2: tab categorie fonte
+        +'<div class="cv-source-tabs" id="cv-source-tabs" style="margin-bottom:20px">'+tabsHtml+'</div>'
+        // riga 3: statistiche
+        +'<div class="cv-stats">'
+          +'<div class="cv-stat"><div class="cv-stat-val" id="cv-pct" style="color:'+color+'">'+sign+d.pct+'%</div><div class="cv-stat-lbl" id="cv-pct-lbl">'+cvPeriodLabels[initPeriod]+'</div></div>'
+          +'<div class="cv-stat"><div class="cv-stat-val" id="cv-spend">\u20ac'+d.spend.toLocaleString('it-IT')+'</div><div class="cv-stat-lbl" id="cv-spend-lbl">'+cvSpendLabels[initPeriod]+'</div></div>'
+          +'<div class="cv-stat"><div class="cv-stat-val">\u20ac'+mover.data['1A'].spend.toLocaleString('it-IT')+'</div><div class="cv-stat-lbl">spesa annua</div></div>'
+        +'</div>'
+      +'</div>'
+      // grafico
+      +'<div class="cv-chart-section">'
+        +'<div class="cv-big-chart" id="cv-chart">'+makeBigSVG(initSeries,initColor,initPeriod)+'</div>'
+      +'</div>'
+      +'<div class="cv-signals-hdr"><div class="cv-signals-title" id="cv-signals-title">Segnali \u2014 '+defaultCat+'</div></div>'
+      +'<div id="cv-signals-body">'
+        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source tv">\uD83D\uDCFA TV</span><span style="font-size:10px;color:var(--muted);margin-left:auto">2h fa</span></div><div class="cv-sig-desc">Spot 30\u2033 rilevato in fascia prime time. Frequenza in aumento rispetto alla settimana precedente.</div></div>'
+        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source radio">\uD83D\uDCFB Radio</span><span style="font-size:10px;color:var(--muted);margin-left:auto">ieri</span></div><div class="cv-sig-desc">Presenza pubblicitaria su due fasce orarie. Budget stimato giornaliero in crescita.</div></div>'
+        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source news">\uD83C\uDF10 News</span><span style="font-size:10px;color:var(--muted);margin-left:auto">3gg fa</span></div><div class="cv-sig-desc">Articolo su L\'Adige: inaugurazione nuovo punto vendita a Rovereto.</div></div>'
+      +'</div>';
+
+    document.getElementById('cv-source-tabs').dataset.moverName=mover.name;
+
+    // Period tabs listeners
+    document.querySelectorAll('#cv-period-tabs .ptab[data-cvp]').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('#cv-period-tabs .ptab').forEach(b=>b.classList.remove('on'));
+        document.getElementById('cv-cal-btn').classList.remove('on');
+        this.classList.add('on');
+        const p=this.dataset.cvp;
+        document.getElementById('cv-period-tabs').dataset.period=p;
+        document.getElementById('cv-cal-wrap').classList.remove('open');
+        cvUpdateStats(mover,p);
+      });
+    });
+    // CV calendar
+    const cvCalBtn=document.getElementById('cv-cal-btn');
+    const cvCalWrap=document.getElementById('cv-cal-wrap');
+    cvCalBtn.addEventListener('click',e=>{e.stopPropagation();const isOpen=cvCalWrap.classList.contains('open');cvCalWrap.classList.toggle('open');if(!isOpen){calStart=null;calEnd=null;calStep=0;buildCalHTML('cv-cal-days','cv-cal-month','cv-cal-hint','cv-cal-apply');}});
+    cvCalWrap.addEventListener('click',e=>e.stopPropagation());
+    document.getElementById('cv-cal-prev').addEventListener('click',()=>{calViewMonth--;if(calViewMonth<0){calViewMonth=11;calViewYear--;}buildCalHTML('cv-cal-days','cv-cal-month','cv-cal-hint','cv-cal-apply');});
+    document.getElementById('cv-cal-next').addEventListener('click',()=>{calViewMonth++;if(calViewMonth>11){calViewMonth=0;calViewYear++;}buildCalHTML('cv-cal-days','cv-cal-month','cv-cal-hint','cv-cal-apply');});
+    document.getElementById('cv-cal-reset').addEventListener('click',()=>{calStart=null;calEnd=null;calStep=0;buildCalHTML('cv-cal-days','cv-cal-month','cv-cal-hint','cv-cal-apply');});
+    document.getElementById('cv-cal-apply').addEventListener('click',()=>{
+      cvCalWrap.classList.remove('open');
+      document.querySelectorAll('#cv-period-tabs .ptab').forEach(b=>b.classList.remove('on'));
+      cvCalBtn.classList.add('on');
+      document.getElementById('cv-period-tabs').dataset.period='CUSTOM';
+      cvUpdateStats(mover,'CUSTOM');
+    });
+
+    document.getElementById('source-header').style.display='none';
+    document.getElementById('view-feed').style.display='none';
+    document.getElementById('view-mezzo').style.display='none';
+    document.getElementById('view-company').style.display='block';
+    document.getElementById('main-panel').scrollTop=0;
+  }
+
+  function cvUpdateStats(mover,period){
+    const d=mover.data[period]||mover.data['7D'];
+    const up=d.pct>=0; const c=up?'#10b981':'#ef4444'; const sign=up?'+':'';
+    const pctEl=document.getElementById('cv-pct'); if(pctEl){pctEl.style.color=c;pctEl.textContent=sign+d.pct+'%';}
+    const pctLbl=document.getElementById('cv-pct-lbl'); if(pctLbl) pctLbl.textContent=cvPeriodLabels[period]||'variazione';
+    const spendEl=document.getElementById('cv-spend'); if(spendEl) spendEl.textContent='\u20ac'+d.spend.toLocaleString('it-IT');
+    const spendLbl=document.getElementById('cv-spend-lbl'); if(spendLbl) spendLbl.textContent=cvSpendLabels[period]||'spesa';
+    const cat=document.querySelector('#cv-source-tabs .cv-stab.on')?.textContent||'Tutte';
+    const series=seriesForPeriodAndCategory(mover,period,cat);
+    const isZero=series.every(v=>v===0);
+    const chartEl=document.getElementById('cv-chart');
+    if(chartEl) chartEl.innerHTML=makeBigSVG(series,isZero?'#475569':c,period);
+  }
+
+  function cvSwitchTab(btn,cat){
+    document.querySelectorAll('.cv-stab').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+    const hdr=document.getElementById('cv-signals-title'); if(hdr) hdr.textContent='Segnali \u2014 '+cat;
+    const moverName=document.getElementById('cv-source-tabs')?.dataset.moverName;
+    const mover=movers.find(m=>m.name===moverName); if(!mover) return;
+    const period=document.getElementById('cv-period-tabs')?.dataset.period||'7D';
+    const d=mover.data[period]||mover.data['7D'];
+    const up=d.pct>=0; const c=up?'#10b981':'#ef4444';
+    const series=seriesForPeriodAndCategory(mover,period,cat);
+    const isZero=series.every(v=>v===0);
+    const chartEl=document.getElementById('cv-chart');
+    if(chartEl) chartEl.innerHTML=makeBigSVG(series,isZero?'#475569':c,period);
+    const body=document.getElementById('cv-signals-body');
+    if(body){
+      if(isZero){ body.innerHTML='<div style="padding:24px;color:var(--muted);font-size:13px;">Nessun segnale rilevato per questa categoria.</div>'; }
+      else { body.innerHTML='<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source tv">\uD83D\uDCFA</span><span style="font-size:10px;color:var(--muted);margin-left:auto">recente</span></div><div class="cv-sig-desc">Segnale da "'+cat+'" per '+mover.name+'.</div></div>'; }
+    }
+  }
+
+  // ── API CONFIG ──────────────────────────────────────────────────
+  const API = window.location.origin === 'null' || window.location.protocol === 'file:'
+    ? 'https://outstanding-courtesy-production-75af.up.railway.app'  // dev fallback
+    : window.location.origin;
+
+  // ── API: carica top mover reali ─────────────────────────────────
+  async function loadTopMovers(period){
+    try {
+      const map = {'1D':'24h','7D':'7d','1M':'1m','6M':'6m','1A':'1a','CUSTOM':'24h'};
+      const r = await fetch(API+'/api/top-movers?period='+(map[period]||'24h')+'&limit=50');
+      if(!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      if(data.movers && data.movers.length > 0){
+        // Convert API movers to dashboard format
+        return data.movers.map(m => ({
+          name: m.company_name,
+          source: m.sources || m.sector || 'Varie fonti',
+          series: generateDefaultSeries(m.pct_change),
+          data: buildMoverData(m),
+        }));
+      }
+    } catch(e){ console.warn('API top-movers fallback:', e.message); }
+    return null; // use mock data
+  }
+
+  function generateDefaultSeries(pct){
+    // Generate a plausible 12-point series based on pct trend
+    const trend = (pct||0)/100;
+    const base = 50;
+    return Array.from({length:12},(_,i)=>{
+      const progress = i/11;
+      const val = base*(1 - trend*(1-progress)) + (Math.random()-0.5)*10;
+      return Math.max(5, Math.round(val));
+    });
+  }
+
+  function buildMoverData(m){
+    const n = m.n_signals || 1;
+    const p = m.pct_change || 0;
+    // Estimate spend from signal count (mock pricing)
+    const estSpend = n * 420;
+    return {
+      '1D':   {pct: p, spend: Math.round(estSpend/7)},
+      '7D':   {pct: p, spend: estSpend},
+      '1M':   {pct: Math.round(p*0.8), spend: estSpend*4},
+      '6M':   {pct: Math.round(p*0.6), spend: estSpend*20},
+      '1A':   {pct: Math.round(p*0.45), spend: estSpend*40},
+      'CUSTOM':{pct: Math.round(p*0.7), spend: estSpend*2},
+    };
+  }
+
+  // ── API: carica segnali reali nel feed ──────────────────────────
+  async function loadSignals(period, sourceCategory, sourceName){
+    const map = {'24h':'24h','48h':'48h','settimana':'7d','tutte':'all'};
+    const ph = map[period]||'24h';
+    let url = API+'/api/signals?period='+ph+'&limit=50';
+    if(sourceCategory) url += '&category='+encodeURIComponent(sourceCategory);
+    if(sourceName)     url += '&source='+encodeURIComponent(sourceName);
+    try {
+      const r = await fetch(url);
+      if(!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      return data.signals || [];
+    } catch(e){ console.warn('API signals fallback:', e.message); return null; }
+  }
+
+  // ── API: aggiorna contatori sidebar ─────────────────────────────
+  async function updateSidebarCounts(period){
+    const map = {'24h':'24h','settimana':'7d','tutte':'all'};
+    const ph = map[period]||'24h';
+    try {
+      const r = await fetch(API+'/api/signals/categories?period='+ph);
+      if(!r.ok) return;
+      const data = await r.json();
+      // Update counts in sidebar
+      document.querySelectorAll('.src-item').forEach(item => {
+        const nameEl = item.querySelector('.src-name');
+        const cntEl  = item.querySelector('.src-count');
+        if(!nameEl||!cntEl) return;
+        const name = nameEl.textContent.trim();
+        // Check all categories for this source name
+        for(const [cat, info] of Object.entries(data.categories||{})){
+          if(info.sources && info.sources[name] !== undefined){
+            cntEl.textContent = info.sources[name];
+            return;
+          }
+        }
+      });
+      // Update total
+      const totalEl = document.querySelector('.src-item .src-count');
+      if(totalEl && data.total !== undefined){
+        const firstItem = document.querySelector('.src-item');
+        const cnt = firstItem?.querySelector('.src-count');
+        if(cnt) cnt.textContent = data.total;
+      }
+      // Update feed count
+      const feedCnt = document.getElementById('feed-count');
+      if(feedCnt && document.getElementById('feed-title')?.textContent === 'Tutti i segnali'){
+        feedCnt.textContent = (data.total||0)+' segnali';
+      }
+    } catch(e){ console.warn('Sidebar counts error:', e.message); }
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────────
+  let activePeriod='1D';
+
+  // Try to load real data, fall back to mock
+  (async () => {
+    const realMovers = await loadTopMovers(activePeriod);
+    if(realMovers && realMovers.length > 0){
+      // Replace mock movers with real ones
+      movers.splice(0, movers.length, ...realMovers);
+      console.log('Loaded', realMovers.length, 'real movers from API');
+    }
+    renderMovers(activePeriod);
+    updateSidebarCounts('24h');
+  })();
+  initCalPicker();
+  initResizeHandle();
+
+  // Nomi azienda cliccabili nel feed
+  document.querySelectorAll('.sig-company').forEach(el=>{
+    el.classList.add('sig-company-link');
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const name=el.textContent.trim();
+      const mover=movers.find(m=>m.name.startsWith(name.split(' ')[0]))||movers[0];
+      showCompanyCenter(mover,document.getElementById('feed-title').textContent);
+    });
+  });
+</script>
+</body>
+</html>
