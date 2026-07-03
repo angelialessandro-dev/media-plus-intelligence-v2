@@ -1536,8 +1536,8 @@
   }
 
   // ── API CONFIG ──────────────────────────────────────────────────
-  const API = window.location.origin === 'null' || window.location.protocol === 'file:'
-    ? 'https://outstanding-courtesy-production-75af.up.railway.app'  // dev fallback
+  const API = window.location.protocol === 'file:'
+    ? 'https://media-plus-intelligence-v2-production.up.railway.app'  // fallback locale
     : window.location.origin;
 
   // ── API: carica top mover reali ─────────────────────────────────
@@ -1587,20 +1587,6 @@
   }
 
   // ── API: carica segnali reali nel feed ──────────────────────────
-  async function loadSignals(period, sourceCategory, sourceName){
-    const map = {'24h':'24h','48h':'48h','settimana':'7d','tutte':'all'};
-    const ph = map[period]||'24h';
-    let url = API+'/api/signals?period='+ph+'&limit=50';
-    if(sourceCategory) url += '&category='+encodeURIComponent(sourceCategory);
-    if(sourceName)     url += '&source='+encodeURIComponent(sourceName);
-    try {
-      const r = await fetch(url);
-      if(!r.ok) throw new Error(r.status);
-      const data = await r.json();
-      return data.signals || [];
-    } catch(e){ console.warn('API signals fallback:', e.message); return null; }
-  }
-
   // ── API: aggiorna contatori sidebar ─────────────────────────────
   async function updateSidebarCounts(period){
     const map = {'24h':'24h','settimana':'7d','tutte':'all'};
