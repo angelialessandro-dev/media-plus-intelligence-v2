@@ -533,8 +533,33 @@
   let currentCatFilter     = null;
   let currentSortOrder     = 'detected_at';
 
+  // Mappa nomi interni crawler → nomi display sidebar
+  const SOURCE_DISPLAY_MAP = {
+    "Google News TN/BZ": "Google News TN/BZ",
+    "Google News Nazionale": "Google News Nazionale",
+    "ANSA Trentino": "ANSA Trentino",
+    "L'Adige": "L'Adige",
+    "Alto Adige": "Alto Adige",
+    "Il Dolomiti": "Il Dolomiti",
+    "Il T Quotidiano": "Il T Quotidiano",
+    "Trentino TV": "Trentino TV",
+    "Alto Adige TV": "Alto Adige TV",
+    "RTTR": "RTTR",
+    "TV33": "TV33",
+    "Radio Dolomiti": "Radio Dolomiti",
+    "Radio Adige": "Radio Adige",
+    "CCIAA TN": "Camera di Commercio TN",
+    "CCIAA BZ": "CCIAA Bolzano",
+  };
+
+  function getDisplaySourceName(rawName){
+    if(!rawName) return '';
+    if(rawName.startsWith('GN:')) return 'Google News TN/BZ';
+    if(rawName.startsWith('Upload:')) return 'Upload';
+    return SOURCE_DISPLAY_MAP[rawName] || rawName;
+  }
+
   function timeAgo(iso){
-    if(!iso) return '';
     const d = new Date(iso.endsWith('Z')?iso:iso+'Z');
     const diff = Math.floor((Date.now()-d.getTime())/1000);
     if(diff<60)    return 'adesso';
@@ -553,7 +578,7 @@
     const urgCls   = 'sig-badge '+(s.urgency||'media');
     const urgLabel = URGENCY_MAP[s.urgency]||'Media urgenza';
     const srcBadge = s.source_name
-      ? `<span class="sig-source" style="background:#1f2937;color:#94a3b8">${escHtml(s.source_name)}</span>`
+      ? `<span class="sig-source" style="background:#1f2937;color:#94a3b8">${escHtml(getDisplaySourceName(s.source_name))}</span>`
       : '';
 
     let expandHtml = '';
