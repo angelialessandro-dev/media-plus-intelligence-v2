@@ -163,7 +163,9 @@ def seed_media():
 
             media_rows = [
                 ("Trentino TV",      "tv",        "tv",           1.40,  "Canale TV regionale TN"),
-                ("Rete 4 Locale",    "tv",        "tv",           1.20,  "Canale TV locale TN/BZ"),
+                ("Alto Adige TV",    "tv",        "tv",           1.30,  "Canale TV regionale BZ"),
+                ("RTTR",             "tv",        "tv",           1.20,  "Radio Televisione Regionale del Trentino"),
+                ("TV33",             "tv",        "tv",           1.10,  "Canale TV locale TN/BZ"),
                 ("Radio Dolomiti",   "radio",     "radio",        0.35,  "Radio FM Trentino"),
                 ("Radio Adige",      "radio",     "radio",        0.28,  "Radio FM TN/BZ"),
                 ("L'Adige",          "newspaper", "giornali",     None,  "Quotidiano Trentino"),
