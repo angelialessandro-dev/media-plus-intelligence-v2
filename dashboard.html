@@ -103,7 +103,7 @@
   .btn-add-price:hover { border-color: var(--accent); color: var(--accent); }
   /* ── SEARCH DROPDOWN ── */
   .search-wrap { position: relative; }
-  .search-dropdown { position: absolute; top: calc(100% + 6px); right: 0; width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 200; overflow: hidden; display: none; }
+  .search-dropdown { position: absolute; top: calc(100% + 6px); right: 0; width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 300; overflow: hidden; display: none; }
   .search-dropdown.open { display: block; }
   .search-res-item { padding: 10px 14px; cursor: pointer; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
   .search-res-item:last-child { border-bottom: none; }
@@ -286,11 +286,11 @@
   <!-- TOPBAR -->
   <div class="topbar">
     <div class="logo" id="main-logo" style="cursor:pointer">Media Plus <span>Intelligence</span></div>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;position:relative">
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;position:relative" id="topbar-right">
       <div class="search-wrap" id="search-bar">
         <input type="text" id="search-input" class="search-input" placeholder="Cerca azienda, fonte…">
-        <div class="search-dropdown" id="search-dropdown"></div>
       </div>
+      <div class="search-dropdown" id="search-dropdown"></div>
       <button class="topbar-icon-btn" id="search-icon-btn" title="Cerca">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
       </button>
