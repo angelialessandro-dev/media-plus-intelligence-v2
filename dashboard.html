@@ -319,17 +319,32 @@
       <div class="src-item" data-category="giornali">
         <div class="src-dot green"></div>
         <span class="src-name">L'Adige</span>
-        <span class="src-count">6</span>
+        <span class="src-count">0</span>
       </div>
       <div class="src-item" data-category="giornali">
-        <div class="src-dot amber"></div>
+        <div class="src-dot green"></div>
         <span class="src-name">Alto Adige</span>
-        <span class="src-count">3</span>
+        <span class="src-count">0</span>
+      </div>
+      <div class="src-item" data-category="giornali">
+        <div class="src-dot green"></div>
+        <span class="src-name">Il Dolomiti</span>
+        <span class="src-count">0</span>
+      </div>
+      <div class="src-item" data-category="giornali">
+        <div class="src-dot green"></div>
+        <span class="src-name">Il T Quotidiano</span>
+        <span class="src-count">0</span>
+      </div>
+      <div class="src-item" data-category="online_news">
+        <div class="src-dot green"></div>
+        <span class="src-name">ANSA Trentino</span>
+        <span class="src-count">0</span>
       </div>
       <div class="src-item" data-category="upload">
-        <div class="src-dot green"></div>
+        <div class="src-dot amber"></div>
         <span class="src-name">Prime pagine PDF</span>
-        <span class="src-count">2</span>
+        <span class="src-count">0</span>
       </div>
     </div>
     <div class="sidebar-divider"></div>
@@ -1589,12 +1604,15 @@
   // ── API: carica segnali reali nel feed ──────────────────────────
   // Mappa: nome sidebar → nomi interni del crawler
   const SIDEBAR_SOURCE_MAP = {
-    "Tutti i segnali":        null, // speciale: usa il totale
-    "Google News TN/BZ":      ["GN: apre Trento","GN: inaugurazione TN","GN: investe TN","GN: nuovo locale TN","GN: espande TN","GN: assume TN","GN: apre Bolzano","GN: inaugura BZ","GN: nuove imprese TN"],
-    "Google News Nazionale":  ["GN: investe BZ","GN: assume BZ"],
+    "Tutti i segnali":        null,
+    "Google News TN/BZ":      ["Google News TN/BZ"],
+    "Google News Nazionale":  ["Google News Nazionale"],
     "L'Adige":                ["L'Adige"],
     "Alto Adige":             ["Alto Adige"],
-    "Prime pagine PDF":       ["Upload"],
+    "Il Dolomiti":            ["Il Dolomiti"],
+    "Il T Quotidiano":        ["Il T Quotidiano"],
+    "ANSA Trentino":          ["ANSA Trentino"],
+    "Prime pagine PDF":       ["Upload","upload"],
     "Trentino TV":            ["Trentino TV"],
     "Rete 4 Locale":          ["Rete 4 Locale"],
     "TV2000":                 ["TV2000"],

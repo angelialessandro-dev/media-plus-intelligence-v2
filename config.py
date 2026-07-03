@@ -44,37 +44,43 @@ SIGNAL_TYPES = [
 
 # ── SOURCES (Google News RSS + diretti) ───────────────────────────────────────
 SOURCES = [
-    # Google News TN
-    {"name":"GN: apre Trento",     "type":"rss","category":"online_news","region":"TN","priority":1,
+    # ── Google News TN ──────────────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
      "url":"https://news.google.com/rss/search?q=apre+Trento+azienda&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: inaugurazione TN","type":"rss","category":"online_news","region":"TN","priority":1,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
      "url":"https://news.google.com/rss/search?q=inaugurazione+Trentino+2026&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: investe TN",      "type":"rss","category":"online_news","region":"TN","priority":1,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
      "url":"https://news.google.com/rss/search?q=investe+Trentino+azienda&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: nuovo locale TN", "type":"rss","category":"online_news","region":"TN","priority":1,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":1,
      "url":"https://news.google.com/rss/search?q=nuovo+negozio+OR+locale+Trento&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: espande TN",      "type":"rss","category":"online_news","region":"TN","priority":2,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
      "url":"https://news.google.com/rss/search?q=espande+OR+espansione+Trentino+azienda&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: assume TN",       "type":"rss","category":"online_news","region":"TN","priority":2,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
      "url":"https://news.google.com/rss/search?q=assunzioni+Trentino+2026&hl=it&gl=IT&ceid=IT:it"},
-    # Google News BZ
-    {"name":"GN: apre Bolzano",    "type":"rss","category":"online_news","region":"BZ","priority":1,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"TN","priority":2,
+     "url":"https://news.google.com/rss/search?q=nuove+imprese+Trentino&hl=it&gl=IT&ceid=IT:it"},
+    # ── Google News BZ ──────────────────────────────────────────────
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":1,
      "url":"https://news.google.com/rss/search?q=apre+Bolzano+azienda&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: inaugura BZ",     "type":"rss","category":"online_news","region":"BZ","priority":1,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":1,
      "url":"https://news.google.com/rss/search?q=inaugurazione+Alto+Adige+2026&hl=it&gl=IT&ceid=IT:it"},
-    {"name":"GN: investe BZ",      "type":"rss","category":"online_news","region":"BZ","priority":2,
+    {"name":"Google News TN/BZ", "type":"rss","category":"online_news","region":"BZ","priority":2,
      "url":"https://news.google.com/rss/search?q=investe+Bolzano+OR+Merano+azienda&hl=it&gl=IT&ceid=IT:it"},
-    # Quotidiani (scraping diretto via newspapers.py)
-    {"name":"L'Adige",             "type":"newspaper","category":"giornali","region":"TN","priority":1,
-     "url":"https://www.ladige.it/"},
-    {"name":"Alto Adige",          "type":"newspaper","category":"giornali","region":"BZ","priority":1,
-     "url":"https://www.altoadige.it/"},
-    {"name":"Trentino",            "type":"newspaper","category":"giornali","region":"TN","priority":2,
-     "url":"https://www.giornaletrentino.it/"},
-    # CCIAA
-    {"name":"CCIAA TN",            "type":"cciaa","category":"cciaa","region":"TN","priority":1,
+    # ── Quotidiani locali (RSS diretti) ─────────────────────────────
+    {"name":"L'Adige",        "type":"newspaper","category":"giornali","region":"TN","priority":1,
+     "url":"https://www.ladige.it/feed-rss"},
+    {"name":"Alto Adige",     "type":"newspaper","category":"giornali","region":"BZ","priority":1,
+     "url":"https://www.altoadige.it/feed-rss"},
+    {"name":"Il Dolomiti",    "type":"newspaper","category":"giornali","region":"TN","priority":2,
+     "url":"https://www.ildolomiti.it/feed"},
+    {"name":"Il T Quotidiano","type":"newspaper","category":"giornali","region":"TN","priority":2,
+     "url":"https://www.iltquotidiano.it/feed"},
+    {"name":"ANSA Trentino",  "type":"newspaper","category":"online_news","region":"TN","priority":1,
+     "url":"https://www.ansa.it/trentino/notizie/trentino_rss.xml"},
+    # ── CCIAA ───────────────────────────────────────────────────────
+    {"name":"CCIAA TN", "type":"cciaa","category":"cciaa","region":"TN","priority":3,
      "url":"https://www.tn.camcom.it/"},
-    {"name":"CCIAA BZ",            "type":"cciaa","category":"cciaa","region":"BZ","priority":1,
+    {"name":"CCIAA BZ", "type":"cciaa","category":"cciaa","region":"BZ","priority":3,
      "url":"https://www.bz.camcom.it/"},
 ]
 

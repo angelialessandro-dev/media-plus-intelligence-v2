@@ -128,23 +128,24 @@ def fetch_article_text(url: str, max_chars: int = 3000) -> str:
 
 NEWSPAPER_CONFIGS = {
     "L'Adige": {
-        "rss": "https://www.ladige.it/rss",
-        "fallback_sections": [
-            "https://www.ladige.it/economia",
-            "https://www.ladige.it/cronaca",
-        ],
+        "rss": "https://www.ladige.it/feed-rss",
+        "fallback_sections": ["https://www.ladige.it/economia", "https://www.ladige.it/cronaca"],
     },
     "Alto Adige": {
-        "rss": "https://www.altoadige.it/rss",
-        "fallback_sections": [
-            "https://www.altoadige.it/economia",
-        ],
+        "rss": "https://www.altoadige.it/feed-rss",
+        "fallback_sections": ["https://www.altoadige.it/economia", "https://www.altoadige.it/cronaca"],
     },
-    "Trentino": {
-        "rss": "https://www.giornaletrentino.it/feed",
-        "fallback_sections": [
-            "https://www.giornaletrentino.it/feed",
-        ],
+    "Il Dolomiti": {
+        "rss": "https://www.ildolomiti.it/feed",
+        "fallback_sections": ["https://www.ildolomiti.it/economia", "https://www.ildolomiti.it/"],
+    },
+    "Il T Quotidiano": {
+        "rss": "https://www.iltquotidiano.it/feed",
+        "fallback_sections": ["https://www.iltquotidiano.it/"],
+    },
+    "ANSA Trentino": {
+        "rss": "https://www.ansa.it/trentino/notizie/trentino_rss.xml",
+        "fallback_sections": ["https://www.ansa.it/trentino/"],
     },
 }
 
@@ -196,8 +197,8 @@ CCIAA_FEEDS = {
         "https://www.tn.camcom.it/it/notizie/rss",
     ],
     "CCIAA BZ": [
-        "https://www.camcom.bz.it/it/notizie/rss",
-        "https://www.camcom.bz.it/it/comunicati-stampa/rss",
+        "https://www.bz.camcom.it/it/comunicati-stampa/rss",
+        "https://www.bz.camcom.it/it/notizie/rss",
     ],
 }
 
