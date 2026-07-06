@@ -472,3 +472,24 @@ def merge_companies(company_id: int, req: MergeRequest):
     """Merge company_id into target_id (company_id disappears)."""
     storage.merge_companies(source_id=company_id, target_id=req.target_id)
     return {"ok": True, "merged": company_id, "into": req.target_id}
+
+
+@app.post("/api/companies/backfill")
+def backfill_companies():
+    from entity_resolver import resolve_company
+    from db import get_connection
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, company_name, sector, city, province FROM signals WHERE company_id IS NULL ORDER BY detected_at")
+            signals = [dict(r) for r in cur.fetchall()]
+        processed = 0
+        for s in signals:
+            company_id, canonical = resolve_company(name=s["company_name"], sector=s.get("sector",""), city=s.get("city",""), province=s.get("province",""), signal_id=s["id"], conn=conn)
+            with conn.cursor() as cur:
+                cur.execute("UPDATE signals SET company_id = %s, company_canonical = %s WHERE id = %s", (company_id, canonical, s["id"]))
+            conn.commit()
+            processed += 1
+        return {"ok": True, "processed": processed}
+    finally:
+        conn.close()
