@@ -345,14 +345,6 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
-      <div class="sidebar-label" style="color:#f59e0b">⬆ Caricamenti manuali</div>
-      <div class="src-item src-upload" data-category="upload" id="sidebar-manual" onclick="openManualView()">
-        <div class="src-icon">📤</div>
-        <span class="src-name">Nuovo caricamento</span>
-      </div>
-    </div>
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section">
       <div class="sidebar-label" style="margin-top:4px">Segnali automatici</div>
       <div class="sidebar-label clickable" style="margin-top:10px" data-group="Altre news">Altre news</div>
       <div class="src-item" data-category="online_news">
@@ -471,9 +463,15 @@
         <span class="src-count">1</span>
       </div>
     </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="color:#f59e0b">⬆ Caricamenti manuali</div>
+      <div class="src-item src-upload" data-category="upload" id="sidebar-manual" onclick="openManualView()">
+        <div class="src-icon">📤</div>
+        <span class="src-name">Nuovo caricamento</span>
+      </div>
+    </div>
   </div>
-
-  <!-- MAIN FEED -->
   <div class="main" id="main-panel">
 
     <!-- HEADER PERSISTENTE (nascosto solo nella vista azienda) -->
@@ -1926,23 +1924,41 @@
 
     document.getElementById('view-manual').innerHTML = `
       <input type="file" id="manual-file-input" accept="image/*,application/pdf">
-      <div class="manual-wrap">
-        <div class="cv-back" onclick="showFeedCenter()">← Tutti i segnali</div>
-        <div class="manual-title" style="margin-top:16px">Caricamento manuale</div>
-        <div class="manual-sub">Testo libero, link o foto — il sistema analizza e propone il segnale</div>
-        <div class="manual-input-area">
-          <div class="manual-tabs">
-            <button class="manual-tab${manualInputType==='text'?' on':''}" onclick="setManualType('text')">✏️ Testo</button>
-            <button class="manual-tab${manualInputType==='url'?' on':''}" onclick="setManualType('url')">🔗 Link</button>
-            <button class="manual-tab${manualInputType==='image'?' on':''}" onclick="setManualType('image')">📷 Foto</button>
+      <!-- INPUT AREA - sticky in cima -->
+      <div style="position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding:16px 24px;">
+        <div style="max-width:760px;margin:0 auto">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span class="cv-back" onclick="showFeedCenter()" style="cursor:pointer">← Segnali</span>
+              <span style="font-size:16px;font-weight:800">Nuovo caricamento</span>
+            </div>
           </div>
-          <textarea id="manual-textarea" class="manual-textarea" placeholder="${placeholders[manualInputType]}" rows="4">${manualInputType==='image' && manualImageB64 ? '✓ Immagine caricata' : ''}</textarea>
-          <div class="manual-actions">
-            <button class="manual-upload-btn" onclick="document.getElementById('manual-file-input').click()">📎 Carica file / foto</button>
-            <button class="manual-analyze-btn" id="manual-analyze-btn" onclick="analyzeManual()">Analizza →</button>
+          <div class="manual-input-area" style="margin-bottom:0">
+            <div class="manual-tabs">
+              <button class="manual-tab${manualInputType==='text'?' on':''}" onclick="setManualType('text')">✏️ Testo</button>
+              <button class="manual-tab${manualInputType==='url'?' on':''}" onclick="setManualType('url')">🔗 Link</button>
+              <button class="manual-tab${manualInputType==='image'?' on':''}" onclick="setManualType('image')">📷 Foto</button>
+            </div>
+            <textarea id="manual-textarea" class="manual-textarea" placeholder="${placeholders[manualInputType]}" rows="3">${manualInputType==='image' && manualImageB64 ? '✓ Immagine caricata' : ''}</textarea>
+            <div class="manual-actions">
+              <button class="manual-upload-btn" onclick="document.getElementById('manual-file-input').click()">📎 Carica file / foto</button>
+              <button class="manual-analyze-btn" id="manual-analyze-btn" onclick="analyzeManual()">Analizza →</button>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- PREVIEW (visibile solo dopo analisi) -->
+      <div style="max-width:760px;margin:0 auto;padding:20px 24px">
         ${previewHtml}
+
+        <!-- SEGNALI MANUALI PRECEDENTI -->
+        <div id="manual-past-signals">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);padding:8px 0 12px;border-top:${previewData?'1px solid var(--border)':'none'};margin-top:${previewData?'8px':'0'}">Caricamenti precedenti</div>
+          <div id="manual-signals-list">
+            <div style="color:var(--muted);font-size:12px;font-style:italic">Caricamento...</div>
+          </div>
+        </div>
       </div>`;
 
     // File input listener
@@ -1960,6 +1976,26 @@
       };
       reader.readAsDataURL(file);
     });
+
+    // Load past manual signals
+    loadManualPastSignals();
+  }
+
+  async function loadManualPastSignals(){
+    const el = document.getElementById('manual-signals-list');
+    if(!el) return;
+    try {
+      const r = await fetch(`${API}/api/signals?period=all&category=upload&limit=20&order_by=detected_at`);
+      const data = await r.json();
+      const signals = data.signals || [];
+      if(signals.length === 0){
+        el.innerHTML = '<div style="color:var(--muted);font-size:12px;font-style:italic">Nessun caricamento manuale ancora.</div>';
+        return;
+      }
+      el.innerHTML = signals.map(s => renderSignalCard(s)).join('');
+    } catch(e){
+      el.innerHTML = '<div style="color:var(--muted);font-size:12px">Errore caricamento.</div>';
+    }
   }
 
   function renderManualField(label, name, value, type, options){
@@ -2039,9 +2075,9 @@
       // Show success
       document.querySelector('.manual-preview').innerHTML =
         '<div class="manual-success">✓ Segnale salvato con successo! (ID: '+data.signal_id+')<br><small style="color:var(--muted);font-size:12px">Comparirà nel feed entro pochi secondi.</small></div>';
-      // Reset
       manualImageB64 = '';
       manualInputType = 'text';
+      setTimeout(() => loadManualPastSignals(), 500);
     } catch(e){
       alert('Errore nel salvataggio: ' + e.message);
     }
