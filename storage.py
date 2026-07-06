@@ -98,12 +98,18 @@ def save_signal(
     signal_nature: str = None,
 ) -> int:
     from config import ADVERTISING_CATEGORIES
-    # Nature is derived from category unless explicitly set
+    from entity_resolver import resolve_company
+
     if signal_nature is None:
         signal_nature = "advertising" if source_category in ADVERTISING_CATEGORIES else "informative"
 
     conn = get_connection()
     try:
+        # Resolve company entity
+        company_id, company_canonical = resolve_company(
+            name=company_name, sector=sector, city=city, province=province, conn=conn
+        )
+
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO signals (
@@ -112,13 +118,15 @@ def save_signal(
                     article_url, article_title,
                     detected_at, published_at, expiry_days,
                     sector, city, province, action, raw_excerpt,
-                    urgency, ai_strategy, ai_products
+                    urgency, ai_strategy, ai_products,
+                    company_id, company_canonical
                 ) VALUES (
                     %s,%s,%s,%s, %s,%s,%s,
                     %s,%s,
                     %s,%s,%s,
                     %s,%s,%s,%s,%s,
-                    %s,%s,%s
+                    %s,%s,%s,
+                    %s,%s
                 ) RETURNING id
             """, (
                 company_name, signal_type, description, confidence,
@@ -127,12 +135,22 @@ def save_signal(
                 datetime.utcnow(), published_at, expiry_days,
                 sector, city, province, action, raw_excerpt,
                 urgency, ai_strategy, ai_products,
+                company_id, company_canonical,
             ))
             new_id = cur.fetchone()["id"]
+
+            # Update company signal count
+            if company_id:
+                cur.execute("""
+                    UPDATE companies SET signal_count = signal_count + 1, updated_at = NOW()
+                    WHERE id = %s
+                """, (company_id,))
+
             cur.execute("""
                 UPDATE sources SET signal_count = signal_count + 1, last_crawl = NOW()
                 WHERE name = %s
             """, (source_name,))
+
         conn.commit()
         return new_id
     finally:
@@ -200,24 +218,140 @@ def get_signal_counts_by_source(period_hours: int = 24) -> dict:
         conn.close()
 
 
+def get_companies(limit: int = 200) -> list[dict]:
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT c.*, COUNT(s.id) as real_signal_count
+                FROM companies c
+                LEFT JOIN signals s ON s.company_id = c.id
+                GROUP BY c.id
+                ORDER BY real_signal_count DESC, c.canonical_name
+                LIMIT %s
+            """, (limit,))
+            rows = []
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get("aliases") and isinstance(d["aliases"], str):
+                    d["aliases"] = json.loads(d["aliases"])
+                for k in ("created_at", "updated_at"):
+                    if d.get(k) and hasattr(d[k], "isoformat"):
+                        d[k] = d[k].isoformat()
+                rows.append(d)
+            return rows
+    finally:
+        conn.close()
+
+
+def get_pending_reviews() -> list[dict]:
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT cr.*, s.company_name, s.description, s.source_name
+                FROM company_review cr
+                LEFT JOIN signals s ON s.id = cr.signal_id
+                WHERE cr.status = 'pending'
+                ORDER BY cr.confidence DESC
+                LIMIT 50
+            """)
+            rows = []
+            for r in cur.fetchall():
+                d = dict(r)
+                if d.get("created_at") and hasattr(d["created_at"], "isoformat"):
+                    d["created_at"] = d["created_at"].isoformat()
+                rows.append(d)
+            return rows
+    finally:
+        conn.close()
+
+
+def confirm_merge(review_id: int, accept: bool):
+    """Confirm or reject a pending company merge suggestion."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT * FROM company_review WHERE id = %s
+            """, (review_id,))
+            review = cur.fetchone()
+            if not review:
+                return
+
+            status = "confirmed" if accept else "rejected"
+            cur.execute("UPDATE company_review SET status = %s WHERE id = %s",
+                        (status, review_id))
+
+            if accept:
+                # Merge: update the signal to point to the suggested canonical
+                cur.execute("""
+                    SELECT id FROM companies WHERE canonical_name = %s
+                """, (review["suggested_canonical"],))
+                target = cur.fetchone()
+                if target and review["signal_id"]:
+                    from entity_resolver import add_alias
+                    add_alias(conn, target["id"], review["company_name_raw"])
+                    cur.execute("""
+                        UPDATE signals
+                        SET company_id = %s, company_canonical = %s
+                        WHERE id = %s
+                    """, (target["id"], review["suggested_canonical"], review["signal_id"]))
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def merge_companies(source_id: int, target_id: int):
+    """Merge source company into target, moving all signals."""
+    import json as _json
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM companies WHERE id = %s", (source_id,))
+            source = cur.fetchone()
+            if not source:
+                return
+
+            # Move all signals
+            cur.execute("""
+                UPDATE signals SET company_id = %s,
+                    company_canonical = (SELECT canonical_name FROM companies WHERE id = %s)
+                WHERE company_id = %s
+            """, (target_id, target_id, source_id))
+
+            # Add aliases to target
+            aliases = source.get("aliases") or []
+            if isinstance(aliases, str):
+                aliases = _json.loads(aliases)
+            aliases.append(source["canonical_name"])
+            for alias in aliases:
+                from entity_resolver import add_alias
+                add_alias(conn, target_id, alias)
+
+            # Delete source company
+            cur.execute("DELETE FROM companies WHERE id = %s", (source_id,))
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
+import json
+
+
 def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
-    """
-    Aggregate signals per company.
-    - n_informative: count of informative signals (articles, news, CCIAA)
-    - n_advertising: count of advertising signals (spots, insertions)
-    - pct_change: based on informative signals for now (advertising when streaming active)
-    - spend_estimated: only from advertising signals via media_spots
-    """
+    """Aggregate signals per canonical company, compare with previous period."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cutoff     = datetime.utcnow() - timedelta(hours=period_hours)
             prev_start = cutoff - timedelta(hours=period_hours)
 
-            # Current period — all signals
             cur.execute("""
                 SELECT
-                    company_name,
+                    COALESCE(company_canonical, company_name) as company_name,
                     COUNT(*) as n_total,
                     COUNT(*) FILTER (WHERE signal_nature = 'informative') as n_informative,
                     COUNT(*) FILTER (WHERE signal_nature = 'advertising') as n_advertising,
@@ -227,25 +361,22 @@ def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
                     AVG(confidence) as avg_confidence
                 FROM signals
                 WHERE detected_at > %s
-                GROUP BY company_name
+                GROUP BY COALESCE(company_canonical, company_name)
             """, (cutoff,))
             current = {r["company_name"]: dict(r) for r in cur.fetchall()}
 
-            # Previous period — for delta
             cur.execute("""
-                SELECT company_name, COUNT(*) as n_prev
+                SELECT COALESCE(company_canonical, company_name) as company_name,
+                       COUNT(*) as n_prev
                 FROM signals
                 WHERE detected_at > %s AND detected_at <= %s
-                GROUP BY company_name
+                GROUP BY COALESCE(company_canonical, company_name)
             """, (prev_start, cutoff))
             prev = {r["company_name"]: r["n_prev"] for r in cur.fetchall()}
 
-            # Advertising spend from media_spots (only real spots count)
             cur.execute("""
-                SELECT company_name,
-                       COALESCE(SUM(estimated_cost), 0) as spend
-                FROM media_spots
-                WHERE detected_at > %s
+                SELECT company_name, COALESCE(SUM(estimated_cost), 0) as spend
+                FROM media_spots WHERE detected_at > %s
                 GROUP BY company_name
             """, (cutoff,))
             spend_map = {r["company_name"]: float(r["spend"]) for r in cur.fetchall()}
@@ -255,7 +386,6 @@ def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
                 n_cur  = data["n_total"]
                 n_prev = prev.get(company, 0)
                 pct = round(((n_cur - n_prev) / n_prev) * 100) if n_prev > 0 else (100 if n_cur > 0 else 0)
-
                 results.append({
                     "company_name":     company,
                     "sources":          data["sources"] or "",
@@ -269,7 +399,6 @@ def get_top_movers(period_hours: int = 24, limit: int = 50) -> list[dict]:
                     "spend_estimated":  spend_map.get(company, 0.0),
                     "avg_confidence":   round(float(data["avg_confidence"] or 0.5), 2),
                 })
-
             results.sort(key=lambda x: (x["pct_change"], x["n_signals"]), reverse=True)
             return results[:limit]
     finally:

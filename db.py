@@ -134,7 +134,44 @@ def init_db():
                     ON media_spots(media_name, company_name, detected_at DESC)
             """)
 
-            # ── file caricati dall'utente ─────────────────────────────────────
+            # ── aziende (entità canoniche) ────────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS companies (
+                    id              SERIAL PRIMARY KEY,
+                    canonical_name  TEXT NOT NULL UNIQUE,
+                    normalized_name TEXT NOT NULL,
+                    aliases         JSONB DEFAULT '[]',
+                    sector          TEXT,
+                    city            TEXT,
+                    province        TEXT,
+                    signal_count    INTEGER DEFAULT 0,
+                    created_at      TIMESTAMP DEFAULT NOW(),
+                    updated_at      TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_companies_normalized
+                    ON companies(normalized_name)
+            """)
+
+            # ── coda revisione merge incerti ──────────────────────────────────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS company_review (
+                    id                  SERIAL PRIMARY KEY,
+                    signal_id           INTEGER,
+                    company_name_raw    TEXT NOT NULL,
+                    suggested_canonical TEXT NOT NULL,
+                    confidence          REAL NOT NULL,
+                    status              TEXT DEFAULT 'pending',
+                    created_at          TIMESTAMP DEFAULT NOW()
+                )
+            """)
+
+            # Migration: aggiungi company_id e company_canonical a signals
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id)")
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS company_canonical TEXT")
+
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS uploads (
                     id          SERIAL PRIMARY KEY,

@@ -437,3 +437,38 @@ def crawler_status():
         "stats":    s,
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+# ── COMPANIES ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/companies")
+def list_companies(limit: int = Query(200)):
+    companies = storage.get_companies(limit=limit)
+    return {"companies": companies, "count": len(companies)}
+
+
+@app.get("/api/companies/review")
+def get_review_queue():
+    reviews = storage.get_pending_reviews()
+    return {"reviews": reviews, "count": len(reviews)}
+
+
+class ReviewAction(BaseModel):
+    accept: bool
+
+
+@app.post("/api/companies/review/{review_id}")
+def handle_review(review_id: int, action: ReviewAction):
+    storage.confirm_merge(review_id, action.accept)
+    return {"ok": True, "review_id": review_id, "accepted": action.accept}
+
+
+class MergeRequest(BaseModel):
+    target_id: int
+
+
+@app.post("/api/companies/{company_id}/merge")
+def merge_companies(company_id: int, req: MergeRequest):
+    """Merge company_id into target_id (company_id disappears)."""
+    storage.merge_companies(source_id=company_id, target_id=req.target_id)
+    return {"ok": True, "merged": company_id, "into": req.target_id}
