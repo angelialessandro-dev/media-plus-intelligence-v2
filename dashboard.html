@@ -57,7 +57,36 @@
   .sig-company-link { cursor: pointer; }
   .sig-company-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-  /* ── SCHEDA TABS (sotto il titolo fonte) ── */
+  /* ── CARICAMENTI MANUALI ── */
+  .manual-wrap { padding: 24px; max-width: 760px; margin: 0 auto; }
+  .manual-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .manual-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .manual-input-area { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .manual-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .manual-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted2); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .manual-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .manual-textarea { width: 100%; min-height: 80px; background: transparent; border: none; color: var(--text); font-size: 14px; font-family: inherit; resize: none; outline: none; line-height: 1.6; }
+  .manual-textarea::placeholder { color: var(--muted); }
+  .manual-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+  .manual-upload-btn { padding: 7px 14px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+  .manual-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .manual-analyze-btn { padding: 9px 22px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .manual-analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+  /* Preview tabella */
+  .manual-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
+  .manual-preview-hdr { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; justify-content: space-between; }
+  .manual-badge-prop { background: #f59e0b22; color: var(--amber); border: 1px solid #f59e0b44; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .manual-field { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: start; padding: 11px 20px; border-bottom: 1px solid var(--border); }
+  .manual-field:last-child { border-bottom: none; }
+  .manual-field-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding-top: 6px; }
+  .manual-field-input { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box; }
+  .manual-field-input:focus { border-color: var(--accent); }
+  select.manual-field-input { cursor: pointer; }
+  .manual-confirm-row { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border); }
+  .btn-cancel { padding: 9px 20px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-confirm { padding: 9px 22px; border-radius: 8px; border: none; background: #10b981; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .manual-success { padding: 20px; text-align: center; color: #10b981; font-size: 14px; font-weight: 600; }
+  #manual-file-input { display: none; }
   .scheda-tabs { display: flex; gap: 0; margin: 10px -20px 0; padding: 0 20px; border-bottom: 1px solid var(--border); }
   .stab { padding: 10px 20px; border: none; background: transparent; color: var(--muted2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
   .stab.on { color: var(--text); border-bottom-color: var(--accent); }
@@ -433,10 +462,9 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-label" style="color:#f59e0b">⬆ Caricamenti manuali</div>
-      <div class="src-item" data-category="upload" class="src-upload">
-        <div class="src-icon">📄</div>
-        <span class="src-name">File caricati da te</span>
-        <span class="src-count">2</span>
+      <div class="src-item src-upload" data-category="upload" id="sidebar-manual" onclick="openManualView()">
+        <div class="src-icon">📤</div>
+        <span class="src-name">Nuovo caricamento</span>
       </div>
     </div>
   </div>
@@ -490,6 +518,9 @@
 
     <!-- VISTA LISTINO -->
     <div id="view-listino" style="display:none"></div>
+
+    <!-- VISTA CARICAMENTO MANUALE -->
+    <div id="view-manual" style="display:none"></div>
 
   </div>
   <div class="rightpanel" id="rightpanel">
@@ -1827,7 +1858,190 @@
     } catch(e){ console.warn('Sidebar counts error:', e.message); }
   }
 
-  // ── INIT ─────────────────────────────────────────────────────────
+  // ── CARICAMENTO MANUALE ───────────────────────────────────────────
+  let manualInputType = 'text';
+  let manualImageB64  = '';
+  let manualImageType = 'image/jpeg';
+
+  function openManualView(){
+    document.getElementById('source-header').style.display = 'none';
+    document.getElementById('view-feed').style.display     = 'none';
+    document.getElementById('view-company').style.display  = 'none';
+    document.getElementById('view-mezzo').style.display    = 'none';
+    document.getElementById('view-listino').style.display  = 'none';
+    document.getElementById('view-manual').style.display   = 'block';
+    document.getElementById('main-panel').scrollTop = 0;
+    renderManualView();
+  }
+
+  function renderManualView(previewData){
+    const SIGNAL_TYPES = [
+      'spot_tv','spot_radio','tabellone','inserzione_giornale','sponsorizzazione',
+      'evento','investimento','nuova_apertura','campagna_marketing','altro'
+    ];
+    const URGENCY = ['alta','media','bassa'];
+    const NATURES = ['advertising','informative'];
+    const SECTORS = [
+      'Automotive','Turismo','Casa e Edilizia','Ristorazione','Retail','Tecnologia',
+      'Salute e Benessere','Agricoltura','Moda e Abbigliamento','Sport e Outdoor',
+      'Finanza e Assicurazioni','Logistica e Trasporti','Artigianato','Istruzione e Formazione',
+      'Energia','Industria Manifatturiera','Immobiliare','Comunicazione e Media',
+      'Alimentare','Ospitalita','Servizi Professionali','Altro',
+    ];
+
+    const placeholders = {
+      text: 'Es: "Ho visto un tabellone di Melinda a Trento" oppure "Melinda è sponsor dell\'evento XYZ" oppure descrivi una notizia...',
+      url:  'Incolla un URL (articolo, sito aziendale...)',
+      image:'Trascina un\'immagine qui o clicca "Carica foto"',
+    };
+
+    const previewHtml = previewData ? `
+      <div class="manual-preview">
+        <div class="manual-preview-hdr">
+          <span>Segnale proposto — verifica e modifica se necessario</span>
+          <span class="manual-badge-prop">📋 Proposta AI</span>
+        </div>
+        ${renderManualField('Azienda', 'company_name', previewData.company_name, 'text')}
+        ${renderManualField('Tipo segnale', 'signal_type', previewData.signal_type, 'select', SIGNAL_TYPES)}
+        ${renderManualField('Natura', 'signal_nature', previewData.signal_nature, 'select', NATURES)}
+        ${renderManualField('Titolo', 'title', previewData.title, 'text')}
+        ${renderManualField('Descrizione', 'description', previewData.description, 'textarea')}
+        ${renderManualField('Urgenza', 'urgency', previewData.urgency, 'select', URGENCY)}
+        ${renderManualField('Settore', 'sector', previewData.sector, 'select', SECTORS)}
+        ${renderManualField('Città', 'city', previewData.city, 'text')}
+        ${renderManualField('Provincia', 'province', previewData.province, 'select', ['TN','BZ'])}
+        ${renderManualField('Budget stimato (€)', 'budget_estimated', previewData.budget_estimated, 'number')}
+        ${previewData.budget_note ? `<div class="manual-field"><div class="manual-field-label">Nota budget</div><div style="font-size:12px;color:var(--muted);padding-top:8px">${escHtml(previewData.budget_note)}</div></div>` : ''}
+        ${renderManualField('Strategia AI', 'ai_strategy', previewData.ai_strategy, 'textarea')}
+        ${renderManualField('Prodotti suggeriti', 'ai_products', previewData.ai_products, 'textarea')}
+        <div class="manual-confirm-row">
+          <button class="btn-cancel" onclick="renderManualView()">✕ Annulla</button>
+          <button class="btn-confirm" onclick="confirmManualSignal()">✓ Conferma e salva segnale</button>
+        </div>
+      </div>` : '';
+
+    document.getElementById('view-manual').innerHTML = `
+      <input type="file" id="manual-file-input" accept="image/*,application/pdf">
+      <div class="manual-wrap">
+        <div class="cv-back" onclick="showFeedCenter()">← Tutti i segnali</div>
+        <div class="manual-title" style="margin-top:16px">Caricamento manuale</div>
+        <div class="manual-sub">Testo libero, link o foto — il sistema analizza e propone il segnale</div>
+        <div class="manual-input-area">
+          <div class="manual-tabs">
+            <button class="manual-tab${manualInputType==='text'?' on':''}" onclick="setManualType('text')">✏️ Testo</button>
+            <button class="manual-tab${manualInputType==='url'?' on':''}" onclick="setManualType('url')">🔗 Link</button>
+            <button class="manual-tab${manualInputType==='image'?' on':''}" onclick="setManualType('image')">📷 Foto</button>
+          </div>
+          <textarea id="manual-textarea" class="manual-textarea" placeholder="${placeholders[manualInputType]}" rows="4">${manualInputType==='image' && manualImageB64 ? '✓ Immagine caricata' : ''}</textarea>
+          <div class="manual-actions">
+            <button class="manual-upload-btn" onclick="document.getElementById('manual-file-input').click()">📎 Carica file / foto</button>
+            <button class="manual-analyze-btn" id="manual-analyze-btn" onclick="analyzeManual()">Analizza →</button>
+          </div>
+        </div>
+        ${previewHtml}
+      </div>`;
+
+    // File input listener
+    document.getElementById('manual-file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const b64 = ev.target.result.split(',')[1];
+        manualImageB64  = b64;
+        manualImageType = file.type || 'image/jpeg';
+        manualInputType = 'image';
+        document.getElementById('manual-textarea').value = '✓ Immagine caricata: ' + file.name;
+        document.getElementById('manual-textarea').readOnly = true;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderManualField(label, name, value, type, options){
+    const v = escHtml(String(value || ''));
+    if(type === 'textarea'){
+      return `<div class="manual-field">
+        <div class="manual-field-label">${label}</div>
+        <textarea class="manual-field-input" name="${name}" rows="3" style="resize:vertical">${v}</textarea>
+      </div>`;
+    }
+    if(type === 'select'){
+      const opts = (options||[]).map(o => `<option value="${o}"${o===String(value)?'selected':''}>${o}</option>`).join('');
+      return `<div class="manual-field">
+        <div class="manual-field-label">${label}</div>
+        <select class="manual-field-input" name="${name}">${opts}</select>
+      </div>`;
+    }
+    return `<div class="manual-field">
+      <div class="manual-field-label">${label}</div>
+      <input class="manual-field-input" type="${type||'text'}" name="${name}" value="${v}">
+    </div>`;
+  }
+
+  function setManualType(t){
+    manualInputType = t;
+    if(t !== 'image'){ manualImageB64 = ''; }
+    renderManualView();
+  }
+
+  async function analyzeManual(){
+    const textarea = document.getElementById('manual-textarea');
+    const text = textarea?.value?.trim() || '';
+    if(!text && !manualImageB64){ alert('Inserisci del testo, un link o una foto.'); return; }
+
+    const btn = document.getElementById('manual-analyze-btn');
+    btn.disabled = true;
+    btn.textContent = 'Analisi in corso…';
+
+    try {
+      const body = {
+        input_text:      manualInputType === 'image' ? '' : text,
+        input_type:      manualInputType,
+        image_base64:    manualImageB64,
+        image_media_type: manualImageType,
+      };
+      const r = await fetch(API + '/api/manual/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+      });
+      const data = await r.json();
+      if(!r.ok) throw new Error(data.detail || 'Errore server');
+      renderManualView(data.signal);
+    } catch(e){
+      alert('Errore durante l\'analisi: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Analizza →';
+    }
+  }
+
+  async function confirmManualSignal(){
+    const preview = document.querySelector('.manual-preview');
+    if(!preview) return;
+    const fields = {};
+    preview.querySelectorAll('[name]').forEach(el => {
+      fields[el.name] = el.value;
+    });
+    fields.confidence = 0.95;
+    try {
+      const r = await fetch(API + '/api/manual/confirm', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(fields),
+      });
+      const data = await r.json();
+      if(!r.ok) throw new Error(data.detail || 'Errore');
+      // Show success
+      document.querySelector('.manual-preview').innerHTML =
+        '<div class="manual-success">✓ Segnale salvato con successo! (ID: '+data.signal_id+')<br><small style="color:var(--muted);font-size:12px">Comparirà nel feed entro pochi secondi.</small></div>';
+      // Reset
+      manualImageB64 = '';
+      manualInputType = 'text';
+    } catch(e){
+      alert('Errore nel salvataggio: ' + e.message);
+    }
+  }
   let activePeriod='1D';
 
   // Carica i segnali subito, indipendentemente dal caricamento dei movers

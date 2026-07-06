@@ -441,6 +441,46 @@ def crawler_status():
 
 # ── COMPANIES ─────────────────────────────────────────────────────────────────
 
+@app.post("/api/companies/backfill")
+def backfill_companies():
+    """Process all existing signals through the entity resolver."""
+    from entity_resolver import resolve_company
+    from db import get_connection
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, company_name, sector, city, province
+                FROM signals
+                WHERE company_id IS NULL
+                ORDER BY detected_at
+            """)
+            signals = [dict(r) for r in cur.fetchall()]
+
+        processed = 0
+        for s in signals:
+            company_id, canonical = resolve_company(
+                name=s["company_name"],
+                sector=s.get("sector", ""),
+                city=s.get("city", ""),
+                province=s.get("province", ""),
+                signal_id=s["id"],
+                conn=conn,
+            )
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE signals SET company_id = %s, company_canonical = %s
+                    WHERE id = %s
+                """, (company_id, canonical, s["id"]))
+            conn.commit()
+            processed += 1
+
+        return {"ok": True, "processed": processed}
+    finally:
+        conn.close()
+
+
 @app.get("/api/companies")
 def list_companies(limit: int = Query(200)):
     companies = storage.get_companies(limit=limit)
@@ -474,22 +514,171 @@ def merge_companies(company_id: int, req: MergeRequest):
     return {"ok": True, "merged": company_id, "into": req.target_id}
 
 
-@app.post("/api/companies/backfill")
-def backfill_companies():
-    from entity_resolver import resolve_company
-    from db import get_connection
-    conn = get_connection()
+# ── CARICAMENTI MANUALI ───────────────────────────────────────────────────────
+
+MANUAL_ANALYZE_PROMPT = """Sei un analista commerciale esperto del mercato trentino e altoatesino.
+Analizza l'input fornito dall'utente (testo, descrizione di un'immagine, o contenuto di una URL).
+Rispondi SOLO con JSON valido, senza testo aggiuntivo.
+
+INPUT: {input_text}
+TIPO INPUT: {input_type}
+
+Estrai le seguenti informazioni e restituisci:
+{{
+  "company_name": "nome esatto dell'azienda",
+  "signal_type": "spot_tv|spot_radio|tabellone|inserzione_giornale|sponsorizzazione|evento|investimento|nuova_apertura|campagna_marketing|altro",
+  "signal_nature": "advertising|informative",
+  "title": "titolo breve del segnale (max 8 parole)",
+  "description": "descrizione del segnale commerciale (2-3 frasi)",
+  "urgency": "alta|media|bassa",
+  "sector": "settore tra: Automotive, Turismo, Casa e Edilizia, Ristorazione, Retail, Tecnologia, Salute e Benessere, Agricoltura, Moda e Abbigliamento, Sport e Outdoor, Finanza e Assicurazioni, Logistica e Trasporti, Artigianato, Istruzione e Formazione, Energia, Industria Manifatturiera, Immobiliare, Comunicazione e Media, Alimentare, Ospitalita, Servizi Professionali, Altro",
+  "city": "comune",
+  "province": "TN o BZ",
+  "budget_estimated": 0,
+  "budget_note": "come hai stimato il budget (es: 'tabellone outdoor 2 settimane ~€800-1200')",
+  "ai_strategy": "strategia commerciale consigliata (2-3 frasi)",
+  "ai_products": "prodotti pubblicitari consigliati",
+  "confidence": 0.0,
+  "source_name": "Manuale",
+  "source_category": "upload"
+}}
+
+Per il budget_estimated: stima in euro basandoti sul tipo di pubblicità:
+- Tabellone outdoor (2 sett): €800-2000
+- Spot TV locale (30"x10 passaggi): €400-1500
+- Spot radio (30"x20 passaggi): €200-600
+- Inserzione giornale pagina intera: €800
+- Sponsorizzazione evento locale: €500-5000
+- Campagna social: €200-2000
+Se è un segnale informativo (non pubblicitario), budget_estimated = 0.
+"""
+
+
+class ManualAnalyzeRequest(BaseModel):
+    input_text: str = ""
+    input_type: str = "text"  # text | url | image_description
+    image_base64: str = ""
+    image_media_type: str = "image/jpeg"
+
+
+@app.post("/api/manual/analyze")
+async def manual_analyze(req: ManualAnalyzeRequest):
+    """Analyze manual input and return proposed signal (not saved)."""
+    import anthropic as _anthropic
+    client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+    # If URL, fetch content first
+    input_text = req.input_text
+    if req.input_type == "url" and req.input_text.startswith("http"):
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+            r = requests.get(req.input_text, timeout=10,
+                             headers={"User-Agent": "Mozilla/5.0"})
+            soup = BeautifulSoup(r.text, "lxml")
+            for tag in soup(["script", "style", "nav", "header", "footer"]):
+                tag.decompose()
+            body = soup.find("article") or soup.find("main") or soup.body
+            input_text = (body or soup).get_text(separator=" ", strip=True)[:3000]
+        except Exception as e:
+            log.warning(f"URL fetch error: {e}")
+
+    prompt = MANUAL_ANALYZE_PROMPT.format(
+        input_text=input_text[:3000],
+        input_type=req.input_type,
+    )
+
+    # Build messages (with image if provided)
+    content = []
+    if req.image_base64:
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": req.image_media_type,
+                "data": req.image_base64,
+            }
+        })
+        content.append({"type": "text", "text": "Analizza questa immagine. " + prompt})
+    else:
+        content = prompt
+
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, company_name, sector, city, province FROM signals WHERE company_id IS NULL ORDER BY detected_at")
-            signals = [dict(r) for r in cur.fetchall()]
-        processed = 0
-        for s in signals:
-            company_id, canonical = resolve_company(name=s["company_name"], sector=s.get("sector",""), city=s.get("city",""), province=s.get("province",""), signal_id=s["id"], conn=conn)
+        response = client.messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=1200,
+            messages=[{"role": "user", "content": content}],
+        )
+        raw = response.content[0].text.strip()
+        if "```" in raw:
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = json.loads(raw.strip())
+        data["input_type"] = req.input_type
+        data["input_text"] = req.input_text[:500]
+        return {"ok": True, "signal": data}
+    except Exception as e:
+        log.error(f"Manual analyze error: {e}")
+        raise HTTPException(500, f"Analisi fallita: {str(e)}")
+
+
+class ManualConfirmRequest(BaseModel):
+    company_name: str
+    signal_type: str
+    signal_nature: str = "informative"
+    title: str = ""
+    description: str
+    urgency: str = "media"
+    sector: str = ""
+    city: str = ""
+    province: str = "TN"
+    budget_estimated: float = 0
+    ai_strategy: str = ""
+    ai_products: str = ""
+    source_name: str = "Manuale"
+    source_category: str = "upload"
+    confidence: float = 0.9
+    input_text: str = ""
+
+
+@app.post("/api/manual/confirm")
+def manual_confirm(req: ManualConfirmRequest):
+    """Save a manually confirmed signal to the DB."""
+    import json as _json
+
+    # Save signal
+    signal_id = storage.save_signal(
+        company_name    = req.company_name,
+        signal_type     = req.signal_type,
+        description     = req.description,
+        confidence      = req.confidence,
+        source_name     = req.source_name,
+        source_category = req.source_category,
+        signal_nature   = req.signal_nature,
+        sector          = req.sector,
+        city            = req.city,
+        province        = req.province,
+        urgency         = req.urgency,
+        ai_strategy     = req.ai_strategy,
+        ai_products     = req.ai_products,
+        raw_excerpt     = req.input_text[:500],
+    )
+
+    # If advertising and has budget → save to media_spots
+    if req.signal_nature == "advertising" and req.budget_estimated > 0:
+        from db import get_connection
+        conn = get_connection()
+        try:
             with conn.cursor() as cur:
-                cur.execute("UPDATE signals SET company_id = %s, company_canonical = %s WHERE id = %s", (company_id, canonical, s["id"]))
+                cur.execute("""
+                    INSERT INTO media_spots
+                        (media_name, company_name, signal_id, estimated_cost)
+                    VALUES (%s, %s, %s, %s)
+                """, (req.source_name, req.company_name, signal_id,
+                      req.budget_estimated))
             conn.commit()
-            processed += 1
-        return {"ok": True, "processed": processed}
-    finally:
-        conn.close()
+        finally:
+            conn.close()
+
+    return {"ok": True, "signal_id": signal_id}
