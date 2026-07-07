@@ -1545,6 +1545,11 @@
 
   // ── SCHEDA AZIENDA ───────────────────────────────────────────────
   const SOURCE_CATEGORIES=['Tutte','Altre news','Giornali online/offline','Streaming TV','Streaming Radio','Social','Altre fonti','Caricamenti manuali'];
+  const CV_TAB_TO_CATEGORY = {
+    'Altre news':'online_news', 'Giornali online/offline':'giornali', 'Streaming TV':'tv',
+    'Streaming Radio':'radio', 'Social':'social', 'Altre fonti':'cciaa', 'Caricamenti manuali':'upload',
+  };
+  const CV_PERIOD_TO_API = {'1D':'24h','7D':'7d','1M':'1m','6M':'6m','1A':'1a','CUSTOM':'1a'};
   const cvPeriodLabels={'1D':'variazione 24h','7D':'variazione 7gg','1M':'variazione mensile','6M':'variazione 6 mesi','1A':'variazione annua','CUSTOM':'nel periodo sel.'};
   const cvSpendLabels={'1D':'spesa 24h','7D':'spesa 7gg','1M':'spesa mensile','6M':'spesa 6 mesi','1A':'spesa annua','CUSTOM':'spesa periodo'};
 
@@ -1710,9 +1715,7 @@
       +'</div>'
       +'<div class="cv-signals-hdr"><div class="cv-signals-title" id="cv-signals-title">Segnali \u2014 '+defaultCat+'</div></div>'
       +'<div id="cv-signals-body">'
-        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source tv">\uD83D\uDCFA TV</span><span style="font-size:10px;color:var(--muted);margin-left:auto">2h fa</span></div><div class="cv-sig-desc">Spot 30\u2033 rilevato in fascia prime time. Frequenza in aumento rispetto alla settimana precedente.</div></div>'
-        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source radio">\uD83D\uDCFB Radio</span><span style="font-size:10px;color:var(--muted);margin-left:auto">ieri</span></div><div class="cv-sig-desc">Presenza pubblicitaria su due fasce orarie. Budget stimato giornaliero in crescita.</div></div>'
-        +'<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source news">\uD83C\uDF10 News</span><span style="font-size:10px;color:var(--muted);margin-left:auto">3gg fa</span></div><div class="cv-sig-desc">Articolo su L\'Adige: inaugurazione nuovo punto vendita a Rovereto.</div></div>'
+        +'<div style="padding:24px;color:var(--muted);font-size:13px">Caricamento segnali...</div>'
       +'</div>';
 
     document.getElementById('cv-source-tabs').dataset.moverName=mover.name;
@@ -1727,6 +1730,8 @@
         document.getElementById('cv-period-tabs').dataset.period=p;
         document.getElementById('cv-cal-wrap').classList.remove('open');
         cvUpdateStats(mover,p);
+        const cat=document.querySelector('#cv-source-tabs .cv-stab.on')?.textContent||'Tutte';
+        cvLoadSignals(mover,p,cat);
       });
     });
     // CV calendar
@@ -1743,6 +1748,8 @@
       cvCalBtn.classList.add('on');
       document.getElementById('cv-period-tabs').dataset.period='CUSTOM';
       cvUpdateStats(mover,'CUSTOM');
+      const cat=document.querySelector('#cv-source-tabs .cv-stab.on')?.textContent||'Tutte';
+      cvLoadSignals(mover,'CUSTOM',cat);
     });
 
     document.getElementById('source-header').style.display='none';
@@ -1752,6 +1759,32 @@
     document.getElementById('view-manual').style.display='none';
     document.getElementById('view-company').style.display='block';
     document.getElementById('main-panel').scrollTop=0;
+
+    // Carica i segnali reali dell'azienda (raggruppati per entità risolta)
+    cvLoadSignals(mover, initPeriod, defaultCat);
+  }
+
+  async function cvLoadSignals(mover, period, cat){
+    const body = document.getElementById('cv-signals-body');
+    if(!body) return;
+    body.innerHTML = '<div style="padding:24px;color:var(--muted);font-size:13px">Caricamento segnali...</div>';
+    const apiPeriod = CV_PERIOD_TO_API[period] || '1a';
+    try {
+      const r = await fetch(`${API}/api/company/${encodeURIComponent(mover.name)}?period=${apiPeriod}`);
+      const data = await r.json();
+      let signals = data.signals || [];
+      if(cat && cat !== 'Tutte'){
+        const key = CV_TAB_TO_CATEGORY[cat];
+        signals = signals.filter(s => s.source_category === key);
+      }
+      if(signals.length === 0){
+        body.innerHTML = '<div style="padding:24px;color:var(--muted);font-size:13px">Nessun segnale rilevato per questa categoria e periodo.</div>';
+        return;
+      }
+      body.innerHTML = signals.map(renderSignalCard).join('');
+    } catch(e){
+      body.innerHTML = '<div style="padding:24px;color:var(--muted);font-size:13px">Errore nel caricamento dei segnali.</div>';
+    }
   }
 
   function cvUpdateStats(mover,period){
@@ -1781,11 +1814,7 @@
     const isZero=series.every(v=>v===0);
     const chartEl=document.getElementById('cv-chart');
     if(chartEl) chartEl.innerHTML=makeBigSVG(series,isZero?'#475569':c,period);
-    const body=document.getElementById('cv-signals-body');
-    if(body){
-      if(isZero){ body.innerHTML='<div style="padding:24px;color:var(--muted);font-size:13px;">Nessun segnale rilevato per questa categoria.</div>'; }
-      else { body.innerHTML='<div class="cv-signal"><div class="cv-sig-top"><span class="sig-source tv">\uD83D\uDCFA</span><span style="font-size:10px;color:var(--muted);margin-left:auto">recente</span></div><div class="cv-sig-desc">Segnale da "'+cat+'" per '+mover.name+'.</div></div>'; }
-    }
+    cvLoadSignals(mover,period,cat);
   }
 
   // ── API CONFIG ──────────────────────────────────────────────────

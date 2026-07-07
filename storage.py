@@ -410,13 +410,15 @@ def get_company_signals(company_name: str, period_hours: int = 24*365) -> list[d
     try:
         with conn.cursor() as cur:
             cutoff = datetime.utcnow() - timedelta(hours=period_hours)
+            like = f"%{company_name}%"
             cur.execute("""
                 SELECT * FROM signals
-                WHERE LOWER(company_name) LIKE LOWER(%s)
+                WHERE (LOWER(company_name) LIKE LOWER(%s)
+                       OR LOWER(company_canonical) LIKE LOWER(%s))
                   AND detected_at > %s
                 ORDER BY detected_at DESC
                 LIMIT 500
-            """, (f"%{company_name}%", cutoff))
+            """, (like, like, cutoff))
             return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
@@ -581,6 +583,38 @@ def mark_upload_processed(upload_id: int, signals_found: int):
                 UPDATE uploads SET processed=true, signals_found=%s WHERE id=%s
             """, (signals_found, upload_id))
         conn.commit()
+    finally:
+        conn.close()
+
+
+# ── ALLEGATI SEGNALI MANUALI ──────────────────────────────────────────────────
+
+def save_attachment(signal_id: int, filename: str, media_type: str, data_base64: str) -> int:
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO signal_attachments (signal_id, filename, media_type, data_base64)
+                VALUES (%s,%s,%s,%s) RETURNING id
+            """, (signal_id, filename, media_type, data_base64))
+            new_id = cur.fetchone()["id"]
+        conn.commit()
+        return new_id
+    finally:
+        conn.close()
+
+
+def get_attachments_for_signal(signal_id: int) -> list[dict]:
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, signal_id, filename, media_type, data_base64, created_at
+                FROM signal_attachments
+                WHERE signal_id = %s
+                ORDER BY id
+            """, (signal_id,))
+            return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
 
