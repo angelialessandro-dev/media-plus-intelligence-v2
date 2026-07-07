@@ -691,16 +691,20 @@
       // effettivamente inserito (testo digitato, link, immagine, file).
       let origineHtml = '';
       if(isManual){
-        const inputText = (s.raw_excerpt && s.raw_excerpt.trim() && !/^https?:\/\//i.test(s.raw_excerpt.trim()))
+        const rawTrim = (s.raw_excerpt || '').trim();
+        const rawIsUrl = /^https?:\/\//i.test(rawTrim);
+        const inputText = (rawTrim && !rawIsUrl)
           ? `<p style="margin-top:6px">${escHtml(s.raw_excerpt)}</p>` : '';
-        const linkText = s.article_url
-          ? `<p style="margin-top:6px"><a href="${escHtml(s.article_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600" onclick="event.stopPropagation()">🔗 ${escHtml(s.article_url)}</a></p>` : '';
+        // Mostra il link: prima article_url, altrimenti raw_excerpt se è un URL
+        const linkUrl = s.article_url || (rawIsUrl ? rawTrim : '');
+        const linkText = linkUrl
+          ? `<p style="margin-top:6px"><a href="${escHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600" onclick="event.stopPropagation()">🔗 ${escHtml(linkUrl)}</a></p>` : '';
         // Il box allegato viene popolato al primo click (lazy) da toggleSignalCard
-        const attachPlaceholder = `<div class="mv-attach-box" id="sig-attach-box-${s.id}" style="display:none;margin-top:6px"></div>`;
+        const attachPlaceholder = `<div class="mv-attach-box" style="display:none;margin-top:6px"></div>`;
         origineHtml = `<div class="expand-box" style="margin-bottom:8px">
           <div class="expand-box-title">Contenuto inserito</div>
           ${inputText}${linkText}${attachPlaceholder}
-          ${(!inputText && !linkText) ? `<div id="sig-origine-empty-${s.id}" style="font-size:12px;color:var(--muted);margin-top:6px">—</div>` : ''}
+          ${(!inputText && !linkText) ? `<div class="sig-origine-empty" style="font-size:12px;color:var(--muted);margin-top:6px">—</div>` : ''}
         </div>`;
       }
       expandHtml = `<div class="sig-expand">
@@ -740,7 +744,9 @@
     const wasOpen = el.classList.contains('open');
     el.classList.toggle('open');
     if(wasOpen) return;
-    const box = document.getElementById(`sig-attach-box-${id}`);
+    // Cerca il box DENTRO la card cliccata: la stessa card può esistere anche
+    // in un'altra vista nascosta, quindi getElementById prenderebbe quella sbagliata.
+    const box = el.querySelector('.mv-attach-box');
     if(!box || box.dataset.loaded === '1') return; // non-manuale, o già caricato
     box.dataset.loaded = '1';
     try {
@@ -749,7 +755,7 @@
       const atts = data.attachments || [];
       if(atts.length === 0){ return; } // nessun allegato: lascia box nascosto
       box.style.display = 'block';
-      const emptyDash = document.getElementById(`sig-origine-empty-${id}`);
+      const emptyDash = el.querySelector('.sig-origine-empty');
       if(emptyDash) emptyDash.remove();
       box.innerHTML = atts.map(a => {
         const isImg = (a.media_type||'').startsWith('image/');
@@ -2411,6 +2417,7 @@
     });
     fields.confidence = 0.95;
     fields.budget_estimated = parseFloat(fields.budget_estimated) || 0;
+    fields.input_text = manualLastPreview?.input_text || '';
     fields.article_url = manualLastPreview?.article_url || '';
     fields.attachments = manualPendingFiles.map(f => ({filename:f.filename, media_type:f.media_type, data_base64:f.data_base64}));
     try {
