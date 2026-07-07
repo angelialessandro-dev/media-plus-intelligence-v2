@@ -96,6 +96,7 @@ def save_signal(
     ai_strategy: str = "",
     ai_products: str = "",
     signal_nature: str = None,
+    title: str = "",
 ) -> int:
     from config import ADVERTISING_CATEGORIES
     from entity_resolver import resolve_company
@@ -118,14 +119,14 @@ def save_signal(
                     article_url, article_title,
                     detected_at, published_at, expiry_days,
                     sector, city, province, action, raw_excerpt,
-                    urgency, ai_strategy, ai_products,
+                    urgency, ai_strategy, ai_products, title,
                     company_id, company_canonical
                 ) VALUES (
                     %s,%s,%s,%s, %s,%s,%s,
                     %s,%s,
                     %s,%s,%s,
                     %s,%s,%s,%s,%s,
-                    %s,%s,%s,
+                    %s,%s,%s,%s,
                     %s,%s
                 ) RETURNING id
             """, (
@@ -134,7 +135,7 @@ def save_signal(
                 article_url, article_title,
                 datetime.utcnow(), published_at, expiry_days,
                 sector, city, province, action, raw_excerpt,
-                urgency, ai_strategy, ai_products,
+                urgency, ai_strategy, ai_products, title,
                 company_id, company_canonical,
             ))
             new_id = cur.fetchone()["id"]
@@ -153,6 +154,112 @@ def save_signal(
 
         conn.commit()
         return new_id
+    finally:
+        conn.close()
+
+
+def get_signal_by_id(signal_id: int) -> dict:
+    """Fetch a single signal, including its associated ad-spend budget (if any)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT s.*, COALESCE(ms.estimated_cost, 0) as budget_estimated
+                FROM signals s
+                LEFT JOIN media_spots ms ON ms.signal_id = s.id
+                WHERE s.id = %s
+                LIMIT 1
+            """, (signal_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_signal(
+    signal_id: int,
+    company_name: str,
+    signal_type: str,
+    signal_nature: str,
+    title: str,
+    description: str,
+    urgency: str,
+    sector: str,
+    city: str,
+    province: str,
+    ai_strategy: str,
+    ai_products: str,
+    budget_estimated: float = 0,
+    source_name: str = "Manuale",
+) -> bool:
+    """Update an existing (typically manually-created) signal in place."""
+    from entity_resolver import resolve_company
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM signals WHERE id = %s", (signal_id,))
+            if not cur.fetchone():
+                return False
+
+            company_id, company_canonical = resolve_company(
+                name=company_name, sector=sector, city=city, province=province, conn=conn
+            )
+
+            cur.execute("""
+                UPDATE signals SET
+                    company_name = %s, signal_type = %s, signal_nature = %s,
+                    title = %s, description = %s, urgency = %s,
+                    sector = %s, city = %s, province = %s,
+                    ai_strategy = %s, ai_products = %s,
+                    company_id = %s, company_canonical = %s
+                WHERE id = %s
+            """, (
+                company_name, signal_type, signal_nature,
+                title, description, urgency,
+                sector, city, province,
+                ai_strategy, ai_products,
+                company_id, company_canonical,
+                signal_id,
+            ))
+
+            # Keep the associated ad-spend row (media_spots) in sync
+            cur.execute("DELETE FROM media_spots WHERE signal_id = %s", (signal_id,))
+            if signal_nature == "advertising" and budget_estimated > 0:
+                cur.execute("""
+                    INSERT INTO media_spots (media_name, company_name, signal_id, estimated_cost)
+                    VALUES (%s, %s, %s, %s)
+                """, (source_name, company_name, signal_id, budget_estimated))
+
+        conn.commit()
+        return True
+    finally:
+        conn.close()
+
+
+def delete_signal(signal_id: int) -> bool:
+    """Delete a signal along with its associated media_spots row(s).
+    signal_attachments cascade automatically (ON DELETE CASCADE)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT company_id FROM signals WHERE id = %s", (signal_id,))
+            row = cur.fetchone()
+            if not row:
+                return False
+            company_id = row.get("company_id")
+
+            cur.execute("DELETE FROM media_spots WHERE signal_id = %s", (signal_id,))
+            cur.execute("DELETE FROM signals WHERE id = %s", (signal_id,))
+
+            if company_id:
+                cur.execute("""
+                    UPDATE companies SET signal_count = GREATEST(signal_count - 1, 0), updated_at = NOW()
+                    WHERE id = %s
+                """, (company_id,))
+
+        conn.commit()
+        return True
     finally:
         conn.close()
 

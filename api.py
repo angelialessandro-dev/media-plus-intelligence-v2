@@ -554,16 +554,21 @@ Se è un segnale informativo (non pubblicitario), budget_estimated = 0.
 """
 
 
+class ManualAttachmentIn(BaseModel):
+    filename:    str = "allegato"
+    media_type:  str = "application/octet-stream"
+    data_base64: str = ""
+
+
 class ManualAnalyzeRequest(BaseModel):
     input_text: str = ""
-    input_type: str = "text"  # text | url | image_description
-    image_base64: str = ""
-    image_media_type: str = "image/jpeg"
+    input_type: str = "text"  # text | url
+    attachments: list[ManualAttachmentIn] = []
 
 
 @app.post("/api/manual/analyze")
 async def manual_analyze(req: ManualAnalyzeRequest):
-    """Analyze manual input and return proposed signal (not saved)."""
+    """Analyze manual input (testo/link/allegati) and return proposed signal (not saved)."""
     import anthropic as _anthropic
     client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -588,18 +593,28 @@ async def manual_analyze(req: ManualAnalyzeRequest):
         input_type=req.input_type,
     )
 
-    # Build messages (with image if provided)
+    # Build content blocks: immagini → vision, PDF → document, il resto ignorato
+    # ai fini dell'analisi (ma comunque salvato come allegato dopo la conferma).
     content = []
-    if req.image_base64:
-        content.append({
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": req.image_media_type,
-                "data": req.image_base64,
-            }
-        })
-        content.append({"type": "text", "text": "Analizza questa immagine. " + prompt})
+    has_media = False
+    for att in req.attachments:
+        if not att.data_base64:
+            continue
+        if att.media_type.startswith("image/"):
+            content.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": att.media_type, "data": att.data_base64},
+            })
+            has_media = True
+        elif "pdf" in att.media_type or att.filename.lower().endswith(".pdf"):
+            content.append({
+                "type": "document",
+                "source": {"type": "base64", "media_type": "application/pdf", "data": att.data_base64},
+            })
+            has_media = True
+
+    if has_media:
+        content.append({"type": "text", "text": "Analizza il/i file allegato/i. " + prompt})
     else:
         content = prompt
 
@@ -640,11 +655,12 @@ class ManualConfirmRequest(BaseModel):
     source_category: str = "upload"
     confidence: float = 0.9
     input_text: str = ""
+    attachments: list[ManualAttachmentIn] = []
 
 
 @app.post("/api/manual/confirm")
 def manual_confirm(req: ManualConfirmRequest):
-    """Save a manually confirmed signal to the DB."""
+    """Save a manually confirmed signal to the DB, along with any attachments."""
     import json as _json
 
     # Save signal
@@ -663,7 +679,19 @@ def manual_confirm(req: ManualConfirmRequest):
         ai_strategy     = req.ai_strategy,
         ai_products     = req.ai_products,
         raw_excerpt     = req.input_text[:500],
+        title           = req.title,
     )
+
+    # Save attachments (images/files), if any, linked to the new signal
+    for att in req.attachments:
+        if not att.data_base64:
+            continue
+        storage.save_attachment(
+            signal_id   = signal_id,
+            filename    = att.filename or "allegato",
+            media_type  = att.media_type or "application/octet-stream",
+            data_base64 = att.data_base64,
+        )
 
     # If advertising and has budget → save to media_spots
     if req.signal_nature == "advertising" and req.budget_estimated > 0:
@@ -682,3 +710,72 @@ def manual_confirm(req: ManualConfirmRequest):
             conn.close()
 
     return {"ok": True, "signal_id": signal_id}
+
+
+@app.get("/api/signals/{signal_id}/attachments")
+def get_signal_attachments(signal_id: int):
+    """Return attachments (images/files) linked to a manually-created signal."""
+    atts = storage.get_attachments_for_signal(signal_id)
+    for a in atts:
+        if a.get("created_at") and hasattr(a["created_at"], "isoformat"):
+            a["created_at"] = a["created_at"].isoformat()
+    return {"attachments": atts}
+
+
+@app.get("/api/signals/{signal_id}")
+def get_signal(signal_id: int):
+    """Fetch a single signal (used to pre-fill the edit form)."""
+    s = storage.get_signal_by_id(signal_id)
+    if not s:
+        raise HTTPException(404, "Segnale non trovato")
+    for k in ("detected_at", "published_at"):
+        if s.get(k) and hasattr(s[k], "isoformat"):
+            s[k] = s[k].isoformat()
+    return {"signal": s}
+
+
+class SignalEditRequest(BaseModel):
+    company_name: str
+    signal_type: str
+    signal_nature: str = "informative"
+    title: str = ""
+    description: str
+    urgency: str = "media"
+    sector: str = ""
+    city: str = ""
+    province: str = "TN"
+    budget_estimated: float = 0
+    ai_strategy: str = ""
+    ai_products: str = ""
+
+
+@app.put("/api/signals/{signal_id}")
+def edit_signal(signal_id: int, req: SignalEditRequest):
+    """Update an existing signal (used by the edit ✎ icon on manually-created signals)."""
+    ok = storage.update_signal(
+        signal_id        = signal_id,
+        company_name     = req.company_name,
+        signal_type      = req.signal_type,
+        signal_nature    = req.signal_nature,
+        title            = req.title,
+        description      = req.description,
+        urgency          = req.urgency,
+        sector           = req.sector,
+        city             = req.city,
+        province         = req.province,
+        ai_strategy      = req.ai_strategy,
+        ai_products      = req.ai_products,
+        budget_estimated = req.budget_estimated,
+    )
+    if not ok:
+        raise HTTPException(404, "Segnale non trovato")
+    return {"ok": True}
+
+
+@app.delete("/api/signals/{signal_id}")
+def remove_signal(signal_id: int):
+    """Delete a signal (used by the 🗑 icon on manually-created signals)."""
+    ok = storage.delete_signal(signal_id)
+    if not ok:
+        raise HTTPException(404, "Segnale non trovato")
+    return {"ok": True}

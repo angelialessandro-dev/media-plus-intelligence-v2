@@ -256,6 +256,11 @@
   .sig-source.cciaa { background: #1f2d1a; color: #86efac; }
   .sig-source.upload { background: #2d2510; color: #fcd34d; }
   .sig-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+  a.sig-source:hover { filter: brightness(1.25); }
+  .sig-actions { display: flex; align-items: center; gap: 8px; }
+  .sig-icon-btn { cursor: pointer; font-size: 13px; opacity: .55; transition: opacity .15s; line-height: 1; }
+  .sig-icon-btn:hover { opacity: 1; }
+  .sig-icon-btn.danger:hover { filter: brightness(1.3) saturate(1.4); }
   .sig-company { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
   .sig-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; margin-bottom: 10px; }
   .sig-bottom { display: flex; align-items: center; gap: 10px; }
@@ -665,9 +670,20 @@
     const icon     = CAT_ICONS[s.source_category]||'📡';
     const urgCls   = 'sig-badge '+(s.urgency||'media');
     const urgLabel = URGENCY_MAP[s.urgency]||'Media urgenza';
+
+    const isLinkableSource = (s.source_category==='online_news'||s.source_category==='giornali') && s.article_url;
     const srcBadge = s.source_name
-      ? `<span class="sig-source" style="background:#1f2937;color:#94a3b8">${escHtml(getDisplaySourceName(s.source_name))}</span>`
+      ? (isLinkableSource
+          ? `<a class="sig-source" href="${escHtml(s.article_url)}" target="_blank" rel="noopener noreferrer" style="background:#1f2937;color:#94a3b8;text-decoration:none" onclick="event.stopPropagation()" title="Apri l'articolo originale">${escHtml(getDisplaySourceName(s.source_name))} ↗</a>`
+          : `<span class="sig-source" style="background:#1f2937;color:#94a3b8">${escHtml(getDisplaySourceName(s.source_name))}</span>`)
       : '';
+
+    const isManual = s.source_category === 'upload';
+    const actionsHtml = isManual ? `
+      <span class="sig-actions">
+        <span class="sig-icon-btn" title="Modifica segnale" onclick="event.stopPropagation();openEditSignalModal(${s.id})">✏️</span>
+        <span class="sig-icon-btn danger" title="Elimina segnale" onclick="event.stopPropagation();deleteManualSignal(${s.id})">🗑️</span>
+      </span>` : '';
 
     let expandHtml = '';
     if(s.description||s.ai_strategy||s.ai_products){
@@ -694,6 +710,7 @@
         <span class="${catCss}">${icon} ${catLabel}</span>
         ${srcBadge}
         <span class="sig-time">${timeAgo(s.detected_at)}</span>
+        ${actionsHtml}
       </div>
       <div class="sig-company sig-company-link" data-cname="${escHtml(s.company_name)}" onclick="event.stopPropagation();feedCompanyClick(this.dataset.cname)">${escHtml(s.company_name)}</div>
       <div class="sig-desc">${escHtml(s.description)}</div>
@@ -2164,6 +2181,10 @@
       <div class="sig-top">
         <span class="sig-source upload">📄 UPLOAD</span>
         <span class="sig-time">${timeAgo(s.detected_at)}</span>
+        <span class="sig-actions">
+          <span class="sig-icon-btn" title="Modifica segnale" onclick="event.stopPropagation();openEditSignalModal(${s.id})">✏️</span>
+          <span class="sig-icon-btn danger" title="Elimina segnale" onclick="event.stopPropagation();deleteManualSignal(${s.id})">🗑️</span>
+        </span>
       </div>
       <div class="sig-company">${escHtml(s.company_name)}</div>
       <div class="sig-desc">${escHtml(s.description)}</div>
@@ -2220,6 +2241,127 @@
         <div class="mv-modal-body">${bodyHtml}</div>
       </div>`;
     document.body.appendChild(modal);
+  }
+
+  // ── MODIFICA / ELIMINAZIONE SEGNALI MANUALI ───────────────────────
+  // Disponibile ovunque venga renderizzata una card (Tutti i segnali, fonti
+  // singole, schede azienda, scheda Segnali di Caricamenti manuali).
+
+  function refreshVisibleSignalsLists(){
+    const feedEl = document.getElementById('view-feed');
+    if(feedEl && feedEl.style.display !== 'none') loadSignals();
+
+    const companyEl = document.getElementById('view-company');
+    if(companyEl && companyEl.style.display !== 'none'){
+      const moverName = document.getElementById('cv-source-tabs')?.dataset.moverName;
+      const mover = movers.find(m => m.name === moverName);
+      if(mover){
+        const period = document.getElementById('cv-period-tabs')?.dataset.period || '7D';
+        const cat = document.querySelector('#cv-source-tabs .cv-stab.on')?.textContent || 'Tutte';
+        cvLoadSignals(mover, period, cat);
+      }
+    }
+
+    const manualEl = document.getElementById('view-manual');
+    if(manualEl && manualEl.style.display !== 'none' && manualActiveTab === 'segnali'){
+      loadManualSignalsTab();
+    }
+  }
+
+  async function openEditSignalModal(id){
+    let s;
+    try {
+      const r = await fetch(`${API}/api/signals/${id}`);
+      const data = await r.json();
+      if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore nel caricamento'));
+      s = data.signal;
+    } catch(e){
+      alert('Errore nel caricamento del segnale: ' + e.message);
+      return;
+    }
+
+    const SIGNAL_TYPES = [
+      'spot_tv','spot_radio','tabellone','inserzione_giornale','sponsorizzazione',
+      'evento','investimento','nuova_apertura','campagna_marketing','altro'
+    ];
+    const URGENCY = ['alta','media','bassa'];
+    const NATURES = ['advertising','informative'];
+    const SECTORS = [
+      'Automotive','Turismo','Casa e Edilizia','Ristorazione','Retail','Tecnologia',
+      'Salute e Benessere','Agricoltura','Moda e Abbigliamento','Sport e Outdoor',
+      'Finanza e Assicurazioni','Logistica e Trasporti','Artigianato','Istruzione e Formazione',
+      'Energia','Industria Manifatturiera','Immobiliare','Comunicazione e Media',
+      'Alimentare','Ospitalita','Servizi Professionali','Altro',
+    ];
+
+    const existing = document.getElementById('mv-modal-backdrop');
+    if(existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'mv-modal-backdrop';
+    modal.id = 'mv-modal-backdrop';
+    modal.addEventListener('click', (e) => { if(e.target === modal) modal.remove(); });
+    modal.innerHTML = `
+      <div class="mv-modal" style="max-width:640px">
+        <div class="mv-modal-hdr">
+          <span class="mv-modal-hdr-title">✏️ Modifica segnale</span>
+          <button class="mv-modal-close" onclick="document.getElementById('mv-modal-backdrop').remove()">✕</button>
+        </div>
+        <div class="mv-modal-body" style="text-align:left;padding:0">
+          <div id="edit-signal-fields">
+            ${renderManualField('Azienda', 'company_name', s.company_name, 'text')}
+            ${renderManualField('Tipo segnale', 'signal_type', s.signal_type, 'select', SIGNAL_TYPES)}
+            ${renderManualField('Natura', 'signal_nature', s.signal_nature, 'select', NATURES)}
+            ${renderManualField('Titolo', 'title', s.title, 'text')}
+            ${renderManualField('Descrizione', 'description', s.description, 'textarea')}
+            ${renderManualField('Urgenza', 'urgency', s.urgency, 'select', URGENCY)}
+            ${renderManualField('Settore', 'sector', s.sector, 'select', SECTORS)}
+            ${renderManualField('Città', 'city', s.city, 'text')}
+            ${renderManualField('Provincia', 'province', s.province, 'select', ['TN','BZ'])}
+            ${renderManualField('Budget stimato (€)', 'budget_estimated', s.budget_estimated, 'number')}
+            ${renderManualField('Strategia AI', 'ai_strategy', s.ai_strategy, 'textarea')}
+            ${renderManualField('Prodotti suggeriti', 'ai_products', s.ai_products, 'textarea')}
+          </div>
+          <div class="manual-confirm-row">
+            <button class="btn-cancel" onclick="document.getElementById('mv-modal-backdrop').remove()">✕ Annulla</button>
+            <button class="btn-confirm" onclick="saveEditedSignal(${id})">✓ Salva modifiche</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
+  async function saveEditedSignal(id){
+    const container = document.getElementById('edit-signal-fields');
+    if(!container) return;
+    const fields = {};
+    container.querySelectorAll('[name]').forEach(el => { fields[el.name] = el.value; });
+    fields.budget_estimated = parseFloat(fields.budget_estimated) || 0;
+    try {
+      const r = await fetch(`${API}/api/signals/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(fields),
+      });
+      const data = await r.json();
+      if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore'));
+      document.getElementById('mv-modal-backdrop')?.remove();
+      refreshVisibleSignalsLists();
+    } catch(e){
+      alert('Errore nel salvataggio: ' + e.message);
+    }
+  }
+
+  async function deleteManualSignal(id){
+    if(!confirm('Eliminare definitivamente questo segnale? L\'azione non è reversibile.')) return;
+    try {
+      const r = await fetch(`${API}/api/signals/${id}`, { method: 'DELETE' });
+      const data = await r.json();
+      if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore'));
+      refreshVisibleSignalsLists();
+    } catch(e){
+      alert('Errore nell\'eliminazione: ' + e.message);
+    }
   }
 
   function renderManualField(label, name, value, type, options){

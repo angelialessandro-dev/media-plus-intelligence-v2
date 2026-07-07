@@ -59,6 +59,7 @@ def init_db():
             """)
             # Migration: add signal_nature if missing
             cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS signal_nature TEXT DEFAULT 'informative'")
+            cur.execute("ALTER TABLE signals ADD COLUMN IF NOT EXISTS title TEXT")
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_company
                     ON signals(company_name, detected_at DESC)
@@ -182,6 +183,22 @@ def init_db():
                     processed   BOOLEAN DEFAULT false,
                     signals_found INTEGER DEFAULT 0
                 )
+            """)
+
+            # ── allegati dei segnali caricati manualmente (immagini/file) ────
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS signal_attachments (
+                    id          SERIAL PRIMARY KEY,
+                    signal_id   INTEGER REFERENCES signals(id) ON DELETE CASCADE,
+                    filename    TEXT,
+                    media_type  TEXT,
+                    data_base64 TEXT NOT NULL,
+                    created_at  TIMESTAMP DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_attachments_signal
+                    ON signal_attachments(signal_id)
             """)
 
         conn.commit()
