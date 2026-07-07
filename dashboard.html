@@ -687,12 +687,24 @@
 
     let expandHtml = '';
     if(s.description||s.ai_strategy||s.ai_products||isManual){
-      const linkRow = (isManual && s.article_url) ? `<div class="expand-box" style="margin-top:8px">
-        <div class="expand-box-title">Link di origine</div>
-        <p><a href="${escHtml(s.article_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600" onclick="event.stopPropagation()">${escHtml(s.article_url)}</a></p>
-      </div>` : '';
-      const attachBox = isManual ? `<div class="expand-box mv-attach-box" id="sig-attach-box-${s.id}" style="display:none;margin-top:8px"></div>` : '';
+      // Per i segnali manuali: sezione "Origine" in alto con ciò che è stato
+      // effettivamente inserito (testo digitato, link, immagine, file).
+      let origineHtml = '';
+      if(isManual){
+        const inputText = (s.raw_excerpt && s.raw_excerpt.trim() && !/^https?:\/\//i.test(s.raw_excerpt.trim()))
+          ? `<p style="margin-top:6px">${escHtml(s.raw_excerpt)}</p>` : '';
+        const linkText = s.article_url
+          ? `<p style="margin-top:6px"><a href="${escHtml(s.article_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600" onclick="event.stopPropagation()">🔗 ${escHtml(s.article_url)}</a></p>` : '';
+        // Il box allegato viene popolato al primo click (lazy) da toggleSignalCard
+        const attachPlaceholder = `<div class="mv-attach-box" id="sig-attach-box-${s.id}" style="display:none;margin-top:6px"></div>`;
+        origineHtml = `<div class="expand-box" style="margin-bottom:8px">
+          <div class="expand-box-title">Contenuto inserito</div>
+          ${inputText}${linkText}${attachPlaceholder}
+          ${(!inputText && !linkText) ? `<div id="sig-origine-empty-${s.id}" style="font-size:12px;color:var(--muted);margin-top:6px">—</div>` : ''}
+        </div>`;
+      }
       expandHtml = `<div class="sig-expand">
+        ${origineHtml}
         <div class="expand-grid">
           <div class="expand-box">
             <div class="expand-box-title">Perché è un segnale</div>
@@ -707,8 +719,6 @@
           <div class="expand-box-title">Prodotti suggeriti dall'AI</div>
           <p>${escHtml(s.ai_products)}</p>
         </div>`:''}
-        ${linkRow}
-        ${attachBox}
       </div>`;
     }
 
@@ -733,23 +743,25 @@
     const box = document.getElementById(`sig-attach-box-${id}`);
     if(!box || box.dataset.loaded === '1') return; // non-manuale, o già caricato
     box.dataset.loaded = '1';
-    box.style.display = 'block';
-    box.innerHTML = '<div class="expand-box-title">Allegato</div><p>Caricamento...</p>';
     try {
       const r = await fetch(`${API}/api/signals/${id}/attachments`);
       const data = await r.json();
       const atts = data.attachments || [];
-      if(atts.length === 0){ box.style.display = 'none'; return; }
-      box.innerHTML = '<div class="expand-box-title">Allegato</div>' + atts.map(a => {
+      if(atts.length === 0){ return; } // nessun allegato: lascia box nascosto
+      box.style.display = 'block';
+      const emptyDash = document.getElementById(`sig-origine-empty-${id}`);
+      if(emptyDash) emptyDash.remove();
+      box.innerHTML = atts.map(a => {
         const isImg = (a.media_type||'').startsWith('image/');
         const dataUrl = `data:${a.media_type};base64,${a.data_base64}`;
         if(isImg){
           return `<img src="${dataUrl}" alt="${escHtml(a.filename)}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block">`;
         }
-        return `<p><a href="${dataUrl}" download="${escHtml(a.filename)}" style="color:var(--accent);font-weight:600;text-decoration:none">📄 ${escHtml(a.filename)} — Scarica</a></p>`;
+        return `<p style="margin-top:6px"><a href="${dataUrl}" download="${escHtml(a.filename)}" style="color:var(--accent);font-weight:600;text-decoration:none" onclick="event.stopPropagation()">📄 ${escHtml(a.filename)} — Scarica</a></p>`;
       }).join('');
     } catch(e){
-      box.innerHTML = '<div class="expand-box-title">Allegato</div><p>Errore nel caricamento.</p>';
+      box.style.display = 'block';
+      box.innerHTML = '<p style="font-size:12px;color:var(--muted);margin-top:6px">Errore nel caricamento dell\'allegato.</p>';
     }
   }
 
