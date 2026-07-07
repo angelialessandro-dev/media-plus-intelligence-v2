@@ -58,6 +58,13 @@
   .sig-company-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
   /* ── CARICAMENTI MANUALI ── */
+  /* #view-manual diventa un pannello flex a due zone quando visibile (display impostato via JS a 'flex'):
+     mv-header non scrolla mai, mv-scroll contiene la lista e scorre in modo indipendente. */
+  #view-manual { flex-direction: column; height: 100%; overflow: hidden; }
+  .mv-header { flex: 0 0 auto; background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px 24px; }
+  .mv-header-inner { max-width: 760px; margin: 0 auto; }
+  .mv-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+  .mv-scroll-inner { max-width: 760px; margin: 0 auto; padding: 20px 24px; }
   .manual-wrap { padding: 24px; max-width: 760px; margin: 0 auto; }
   .manual-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
   .manual-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
@@ -85,6 +92,43 @@
   .manual-confirm-row { display: flex; gap: 10px; justify-content: flex-end; padding: 16px 20px; border-top: 1px solid var(--border); }
   .btn-cancel { padding: 9px 20px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-confirm { padding: 9px 22px; border-radius: 8px; border: none; background: #10b981; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  /* Titolo + tab Segnali/Upload */
+  .mv-title { font-size: 26px; font-weight: 800; letter-spacing: -.3px; margin: 6px 0 14px; }
+  .mv-tabs-row { display: flex; gap: 24px; border-bottom: 1px solid var(--border); }
+  .mv-tab { padding: 0 0 10px; border: none; background: transparent; color: var(--muted2); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
+  .mv-tab.on { color: var(--text); border-bottom-color: var(--accent); }
+  .mv-tab:hover { color: var(--text); }
+
+  /* Dropzone upload (box grande) */
+  .manual-textarea-lg { min-height: 210px; }
+  .mv-dropzone { position: relative; }
+  .mv-drop-overlay { display: none; position: absolute; inset: 8px; border: 2px dashed var(--accent); border-radius: 10px; align-items: center; justify-content: center; gap: 8px; color: var(--muted2); font-size: 15px; font-weight: 700; background: rgba(10,14,26,.55); pointer-events: none; z-index: 2; }
+  .mv-dropzone.dragover .mv-drop-overlay { display: flex; }
+  .mv-dropzone.dragover .manual-textarea { opacity: .25; transition: opacity .15s; }
+  .mv-files-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mv-file-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 20px; background: var(--bg); border: 1px solid var(--border); font-size: 12px; color: var(--muted2); max-width: 170px; }
+  .mv-file-chip .mv-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; }
+  .mv-file-chip .mv-file-remove { cursor: pointer; color: var(--muted); font-weight: 700; line-height: 1; }
+  .mv-file-chip .mv-file-remove:hover { color: var(--red); }
+
+  /* Empty state coerente con il feed principale */
+  .mv-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 48px 20px; }
+  .mv-empty small { color: var(--border); display: block; margin-top: 4px; }
+
+  /* Modale preview allegato */
+  .mv-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 500; }
+  .mv-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; max-width: 640px; width: 90%; max-height: 85vh; overflow: auto; }
+  .mv-modal-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .mv-modal-hdr-title { font-size: 14px; font-weight: 700; }
+  .mv-modal-close { cursor: pointer; color: var(--muted); font-size: 20px; background: none; border: none; font-family: inherit; line-height: 1; }
+  .mv-modal-close:hover { color: var(--text); }
+  .mv-modal-body { padding: 20px; text-align: center; }
+  .mv-modal-body img { max-width: 100%; max-height: 60vh; border-radius: 8px; }
+  .mv-file-generic { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 30px 0; color: var(--muted2); }
+  .mv-file-generic-icon { font-size: 44px; }
+  .mv-file-generic a { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; }
+  .mv-file-generic a:hover { text-decoration: underline; }
   .manual-success { padding: 20px; text-align: center; color: #10b981; font-size: 14px; font-weight: 600; }
   #manual-file-input { display: none; }
   .scheda-tabs { display: flex; gap: 0; margin: 10px -20px 0; padding: 0 20px; border-bottom: 1px solid var(--border); }
@@ -345,7 +389,6 @@
     </div>
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
-      <div class="sidebar-label" style="margin-top:4px">Segnali automatici</div>
       <div class="sidebar-label clickable" style="margin-top:10px" data-group="Altre news">Altre news</div>
       <div class="src-item" data-category="online_news">
         <div class="src-dot green"></div>
@@ -916,6 +959,10 @@
   // ── SIDEBAR: click singola fonte ────────────────────────────────
   document.querySelectorAll('.src-item').forEach(item => {
     item.addEventListener('click', function(){
+      // "Nuovo caricamento" ha già il proprio handler (openManualView(), via onclick inline).
+      // Se lo lasciamo proseguire qui sotto, showFeedCenter() viene richiamato subito dopo
+      // e riporta in vista il feed segnali sopra/sotto la vista di caricamento manuale.
+      if(this.dataset.category === 'upload') return;
       document.querySelectorAll('.src-item').forEach(i => i.classList.remove('active'));
       this.classList.add('active');
       const name = this.querySelector('.src-name');
@@ -1360,6 +1407,7 @@
     document.getElementById('view-company').style.display='none';
     document.getElementById('view-mezzo').style.display='none';
     document.getElementById('view-listino').style.display='none';
+    document.getElementById('view-manual').style.display='none';
     document.getElementById('main-panel').scrollTop=0;
     document.getElementById('stab-segnali').classList.add('on');
     document.getElementById('stab-mezzo').classList.remove('on');
@@ -1394,6 +1442,8 @@
     document.getElementById('source-header').style.display='block';
     document.getElementById('view-feed').style.display='none';
     document.getElementById('view-company').style.display='none';
+    document.getElementById('view-listino').style.display='none';
+    document.getElementById('view-manual').style.display='none';
     document.getElementById('view-mezzo').style.display='block';
     document.getElementById('stab-segnali').classList.remove('on');
     document.getElementById('stab-mezzo').classList.add('on');
@@ -1698,6 +1748,8 @@
     document.getElementById('source-header').style.display='none';
     document.getElementById('view-feed').style.display='none';
     document.getElementById('view-mezzo').style.display='none';
+    document.getElementById('view-listino').style.display='none';
+    document.getElementById('view-manual').style.display='none';
     document.getElementById('view-company').style.display='block';
     document.getElementById('main-panel').scrollTop=0;
   }
@@ -1861,9 +1913,13 @@
   }
 
   // ── CARICAMENTO MANUALE ───────────────────────────────────────────
-  let manualInputType = 'text';
-  let manualImageB64  = '';
-  let manualImageType = 'image/jpeg';
+  let manualActiveTab   = 'upload';   // 'segnali' | 'upload'
+  let manualTextValue   = '';
+  let manualPendingFiles = [];        // [{filename, media_type, data_base64, is_image}]
+  let manualLastPreview = null;       // ultima proposta AI in sospeso (persiste tra i cambi tab)
+  let manualPeriod      = '24h';
+  let manualSort        = 'recente';
+  let manualSignalsCache = [];        // ultimo elenco caricato, per il click → preview allegato
 
   function openManualView(){
     document.getElementById('source-header').style.display = 'none';
@@ -1871,12 +1927,20 @@
     document.getElementById('view-company').style.display  = 'none';
     document.getElementById('view-mezzo').style.display    = 'none';
     document.getElementById('view-listino').style.display  = 'none';
-    document.getElementById('view-manual').style.display   = 'block';
+    document.getElementById('view-manual').style.display   = 'flex';
     document.getElementById('main-panel').scrollTop = 0;
     renderManualView();
   }
 
+  function setManualTab(t){
+    manualActiveTab = t;
+    renderManualView();
+  }
+
   function renderManualView(previewData){
+    if(previewData !== undefined) manualLastPreview = previewData; // undefined = non toccare la cache
+    const pd = manualLastPreview;
+
     const SIGNAL_TYPES = [
       'spot_tv','spot_radio','tabellone','inserzione_giornale','sponsorizzazione',
       'evento','investimento','nuova_apertura','campagna_marketing','altro'
@@ -1891,115 +1955,246 @@
       'Alimentare','Ospitalita','Servizi Professionali','Altro',
     ];
 
-    const placeholders = {
-      text: 'Es: "Ho visto un tabellone di Melinda a Trento" oppure "Melinda è sponsor dell\'evento XYZ" oppure descrivi una notizia...',
-      url:  'Incolla un URL (articolo, sito aziendale...)',
-      image:'Trascina un\'immagine qui o clicca "Carica foto"',
-    };
-
-    const previewHtml = previewData ? `
-      <div class="manual-preview">
+    const previewHtml = pd ? `
+      <div class="manual-preview" style="margin-top:20px">
         <div class="manual-preview-hdr">
           <span>Segnale proposto — verifica e modifica se necessario</span>
           <span class="manual-badge-prop">📋 Proposta AI</span>
         </div>
-        ${renderManualField('Azienda', 'company_name', previewData.company_name, 'text')}
-        ${renderManualField('Tipo segnale', 'signal_type', previewData.signal_type, 'select', SIGNAL_TYPES)}
-        ${renderManualField('Natura', 'signal_nature', previewData.signal_nature, 'select', NATURES)}
-        ${renderManualField('Titolo', 'title', previewData.title, 'text')}
-        ${renderManualField('Descrizione', 'description', previewData.description, 'textarea')}
-        ${renderManualField('Urgenza', 'urgency', previewData.urgency, 'select', URGENCY)}
-        ${renderManualField('Settore', 'sector', previewData.sector, 'select', SECTORS)}
-        ${renderManualField('Città', 'city', previewData.city, 'text')}
-        ${renderManualField('Provincia', 'province', previewData.province, 'select', ['TN','BZ'])}
-        ${renderManualField('Budget stimato (€)', 'budget_estimated', previewData.budget_estimated, 'number')}
-        ${previewData.budget_note ? `<div class="manual-field"><div class="manual-field-label">Nota budget</div><div style="font-size:12px;color:var(--muted);padding-top:8px">${escHtml(previewData.budget_note)}</div></div>` : ''}
-        ${renderManualField('Strategia AI', 'ai_strategy', previewData.ai_strategy, 'textarea')}
-        ${renderManualField('Prodotti suggeriti', 'ai_products', previewData.ai_products, 'textarea')}
+        ${renderManualField('Azienda', 'company_name', pd.company_name, 'text')}
+        ${renderManualField('Tipo segnale', 'signal_type', pd.signal_type, 'select', SIGNAL_TYPES)}
+        ${renderManualField('Natura', 'signal_nature', pd.signal_nature, 'select', NATURES)}
+        ${renderManualField('Titolo', 'title', pd.title, 'text')}
+        ${renderManualField('Descrizione', 'description', pd.description, 'textarea')}
+        ${renderManualField('Urgenza', 'urgency', pd.urgency, 'select', URGENCY)}
+        ${renderManualField('Settore', 'sector', pd.sector, 'select', SECTORS)}
+        ${renderManualField('Città', 'city', pd.city, 'text')}
+        ${renderManualField('Provincia', 'province', pd.province, 'select', ['TN','BZ'])}
+        ${renderManualField('Budget stimato (€)', 'budget_estimated', pd.budget_estimated, 'number')}
+        ${pd.budget_note ? `<div class="manual-field"><div class="manual-field-label">Nota budget</div><div style="font-size:12px;color:var(--muted);padding-top:8px">${escHtml(pd.budget_note)}</div></div>` : ''}
+        ${renderManualField('Strategia AI', 'ai_strategy', pd.ai_strategy, 'textarea')}
+        ${renderManualField('Prodotti suggeriti', 'ai_products', pd.ai_products, 'textarea')}
         <div class="manual-confirm-row">
-          <button class="btn-cancel" onclick="renderManualView()">✕ Annulla</button>
+          <button class="btn-cancel" onclick="renderManualView(null)">✕ Annulla</button>
           <button class="btn-confirm" onclick="confirmManualSignal()">✓ Conferma e salva segnale</button>
         </div>
       </div>` : '';
 
-    document.getElementById('view-manual').innerHTML = `
-      <input type="file" id="manual-file-input" accept="image/*,application/pdf">
-      <!-- INPUT AREA - sticky in cima -->
-      <div style="position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding:16px 24px;">
-        <div style="max-width:760px;margin:0 auto">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div style="display:flex;align-items:center;gap:12px">
-              <span class="cv-back" onclick="showFeedCenter()" style="cursor:pointer">← Segnali</span>
-              <span style="font-size:16px;font-weight:800">Nuovo caricamento</span>
-            </div>
+    const fileChipsHtml = manualPendingFiles.map((f,i) => `
+      <span class="mv-file-chip">${f.is_image?'🖼️':'📄'} <span class="mv-file-name" title="${escHtml(f.filename)}">${escHtml(f.filename)}</span><span class="mv-file-remove" onclick="event.stopPropagation();removeManualFile(${i})">✕</span></span>
+    `).join('');
+
+    const uploadTabHtml = `
+      <div class="manual-input-area mv-dropzone" id="mv-dropzone" style="margin-top:20px">
+        <div class="mv-drop-overlay">➕ trascina file</div>
+        <textarea id="manual-textarea" class="manual-textarea manual-textarea-lg" placeholder="Scrivi, carica un'immagine o incolla un link!">${escHtml(manualTextValue)}</textarea>
+        <div class="manual-actions">
+          <div class="mv-files-row">
+            <button class="manual-upload-btn" onclick="document.getElementById('manual-file-input').click()">➕ seleziona file</button>
+            ${fileChipsHtml}
           </div>
-          <div class="manual-input-area" style="margin-bottom:0">
-            <div class="manual-tabs">
-              <button class="manual-tab${manualInputType==='text'?' on':''}" onclick="setManualType('text')">✏️ Testo</button>
-              <button class="manual-tab${manualInputType==='url'?' on':''}" onclick="setManualType('url')">🔗 Link</button>
-              <button class="manual-tab${manualInputType==='image'?' on':''}" onclick="setManualType('image')">📷 Foto</button>
-            </div>
-            <textarea id="manual-textarea" class="manual-textarea" placeholder="${placeholders[manualInputType]}" rows="3">${manualInputType==='image' && manualImageB64 ? '✓ Immagine caricata' : ''}</textarea>
-            <div class="manual-actions">
-              <button class="manual-upload-btn" onclick="document.getElementById('manual-file-input').click()">📎 Carica file / foto</button>
-              <button class="manual-analyze-btn" id="manual-analyze-btn" onclick="analyzeManual()">Analizza →</button>
-            </div>
+          <button class="manual-analyze-btn" id="manual-analyze-btn" onclick="analyzeManual()">Carica</button>
+        </div>
+      </div>
+      ${previewHtml}`;
+
+    const segnaliTabHtml = `
+      <div class="feed-controls" style="padding:0 0 14px;border-bottom:1px solid var(--border);margin-top:18px">
+        <div class="time-chips" id="mv-time-chips">
+          <button class="time-chip${manualPeriod==='24h'?' on':''}" data-time="24h">24h</button>
+          <button class="time-chip${manualPeriod==='48h'?' on':''}" data-time="48h">48h</button>
+          <button class="time-chip${manualPeriod==='settimana'?' on':''}" data-time="settimana">Questa settimana</button>
+          <button class="time-chip${manualPeriod==='tutte'?' on':''}" data-time="tutte">Tutte</button>
+        </div>
+        <div class="feed-selects">
+          <select class="feed-select" id="mv-sort-select">
+            <option value="recente"${manualSort==='recente'?' selected':''}>↓ Più recente</option>
+            <option value="imp-desc"${manualSort==='imp-desc'?' selected':''}>↓ Importanza decrescente</option>
+            <option value="imp-asc"${manualSort==='imp-asc'?' selected':''}>↑ Importanza crescente</option>
+            <option value="azienda"${manualSort==='azienda'?' selected':''}>A→Z Azienda</option>
+          </select>
+        </div>
+      </div>
+      <div id="manual-signals-list" style="padding-top:4px">
+        <div style="color:var(--muted);font-size:12px;font-style:italic;padding:20px 0">Caricamento...</div>
+      </div>`;
+
+    document.getElementById('view-manual').innerHTML = `
+      <input type="file" id="manual-file-input" accept="image/*,application/pdf,.doc,.docx,.txt" multiple>
+      <!-- HEADER: zona fissa, non scrolla mai -->
+      <div class="mv-header">
+        <div class="mv-header-inner">
+          <span class="cv-back" onclick="showFeedCenter()" style="cursor:pointer;padding:0;border-bottom:none;display:inline-flex">← Segnali</span>
+          <div class="mv-title">Caricamenti manuali</div>
+          <div class="mv-tabs-row">
+            <button class="mv-tab${manualActiveTab==='segnali'?' on':''}" onclick="setManualTab('segnali')">Segnali</button>
+            <button class="mv-tab${manualActiveTab==='upload'?' on':''}" onclick="setManualTab('upload')">Upload</button>
           </div>
         </div>
       </div>
 
-      <!-- PREVIEW (visibile solo dopo analisi) -->
-      <div style="max-width:760px;margin:0 auto;padding:20px 24px">
-        ${previewHtml}
-
-        <!-- SEGNALI MANUALI PRECEDENTI -->
-        <div id="manual-past-signals">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);padding:8px 0 12px;border-top:${previewData?'1px solid var(--border)':'none'};margin-top:${previewData?'8px':'0'}">Caricamenti precedenti</div>
-          <div id="manual-signals-list">
-            <div style="color:var(--muted);font-size:12px;font-style:italic">Caricamento...</div>
-          </div>
+      <!-- ZONA SCROLLABILE INDIPENDENTE -->
+      <div class="mv-scroll">
+        <div class="mv-scroll-inner">
+          ${manualActiveTab === 'upload' ? uploadTabHtml : segnaliTabHtml}
         </div>
       </div>`;
 
-    // File input listener
-    document.getElementById('manual-file-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const b64 = ev.target.result.split(',')[1];
-        manualImageB64  = b64;
-        manualImageType = file.type || 'image/jpeg';
-        manualInputType = 'image';
-        document.getElementById('manual-textarea').value = '✓ Immagine caricata: ' + file.name;
-        document.getElementById('manual-textarea').readOnly = true;
-      };
-      reader.readAsDataURL(file);
-    });
+    if(manualActiveTab === 'upload'){
+      // File input + drag&drop
+      document.getElementById('manual-file-input').addEventListener('change', (e) => {
+        addFilesToManual(e.target.files);
+        e.target.value = '';
+      });
+      const ta = document.getElementById('manual-textarea');
+      ta.addEventListener('input', () => { manualTextValue = ta.value; });
 
-    // Load past manual signals
-    loadManualPastSignals();
-  }
-
-  async function loadManualPastSignals(){
-    const el = document.getElementById('manual-signals-list');
-    if(!el) return;
-    try {
-      const r = await fetch(`${API}/api/signals?period=all&category=upload&limit=20&order_by=detected_at`);
-      const data = await r.json();
-      const signals = data.signals || [];
-      if(signals.length === 0){
-        el.innerHTML = '<div style="color:var(--muted);font-size:12px;font-style:italic">Nessun caricamento manuale ancora.</div>';
-        return;
-      }
-      el.innerHTML = signals.map(s => renderSignalCard(s)).join('');
-    } catch(e){
-      el.innerHTML = '<div style="color:var(--muted);font-size:12px">Errore caricamento.</div>';
+      const dz = document.getElementById('mv-dropzone');
+      ['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover');
+      }));
+      ['dragleave','dragend'].forEach(evt => dz.addEventListener(evt, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if(evt==='dragleave' && e.target !== dz) return;
+        dz.classList.remove('dragover');
+      }));
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        dz.classList.remove('dragover');
+        if(e.dataTransfer?.files?.length) addFilesToManual(e.dataTransfer.files);
+      });
+    } else {
+      loadManualSignalsTab();
+      document.querySelectorAll('#mv-time-chips .time-chip').forEach(btn => {
+        btn.addEventListener('click', function(){
+          document.querySelectorAll('#mv-time-chips .time-chip').forEach(b => b.classList.remove('on'));
+          this.classList.add('on');
+          manualPeriod = this.dataset.time;
+          loadManualSignalsTab();
+        });
+      });
+      document.getElementById('mv-sort-select').addEventListener('change', function(){
+        manualSort = this.value;
+        loadManualSignalsTab();
+      });
     }
   }
 
+  function addFilesToManual(fileList){
+    const files = Array.from(fileList || []);
+    if(files.length === 0) return;
+    let pending = files.length;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const b64 = ev.target.result.split(',')[1];
+        manualPendingFiles.push({
+          filename:    file.name || 'allegato',
+          media_type:  file.type || 'application/octet-stream',
+          data_base64: b64,
+          is_image:    (file.type||'').startsWith('image/'),
+        });
+        pending--;
+        if(pending === 0) renderManualView();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function removeManualFile(idx){
+    manualPendingFiles.splice(idx,1);
+    renderManualView();
+  }
+
+  async function loadManualSignalsTab(){
+    const el = document.getElementById('manual-signals-list');
+    if(!el) return;
+    const periodMap = {'24h':'24h','48h':'48h','settimana':'7d','tutte':'all'};
+    const orderMap  = {'recente':'detected_at','imp-desc':'confidence','imp-asc':'confidence','azienda':'company'};
+    const p  = periodMap[manualPeriod] || '24h';
+    const ob = orderMap[manualSort] || 'detected_at';
+    try {
+      const r = await fetch(`${API}/api/signals?period=${p}&category=upload&limit=50&order_by=${ob}`);
+      const data = await r.json();
+      const signals = data.signals || [];
+      manualSignalsCache = signals;
+      if(signals.length === 0){
+        el.innerHTML = '<div class="mv-empty">Nessun segnale in questo periodo.<br><small>Carica il tuo primo segnale dalla scheda "Upload".</small></div>';
+        return;
+      }
+      el.innerHTML = signals.map(s => renderManualSignalCard(s)).join('');
+    } catch(e){
+      el.innerHTML = '<div class="mv-empty">Errore nel caricamento.</div>';
+    }
+  }
+
+  function renderManualSignalCard(s){
+    const urgCls   = 'sig-badge '+(s.urgency||'media');
+    const urgLabel = URGENCY_MAP[s.urgency]||'Media urgenza';
+    return `<div class="signal-card" style="cursor:pointer" onclick="openManualSignalPreview(${s.id})">
+      <div class="sig-top">
+        <span class="sig-source upload">📄 UPLOAD</span>
+        <span class="sig-time">${timeAgo(s.detected_at)}</span>
+      </div>
+      <div class="sig-company">${escHtml(s.company_name)}</div>
+      <div class="sig-desc">${escHtml(s.description)}</div>
+      <div class="sig-bottom"><span class="${urgCls}">● ${urgLabel}</span></div>
+    </div>`;
+  }
+
+  async function openManualSignalPreview(id){
+    const sig = manualSignalsCache.find(s => s.id === id) || null;
+    let attachments = [];
+    try {
+      const r = await fetch(`${API}/api/signals/${id}/attachments`);
+      const data = await r.json();
+      attachments = data.attachments || [];
+    } catch(e){ /* nessun allegato disponibile */ }
+    showAttachmentModal(sig, attachments);
+  }
+
+  function showAttachmentModal(sig, attachments){
+    const existing = document.getElementById('mv-modal-backdrop');
+    if(existing) existing.remove();
+
+    let bodyHtml;
+    if(!attachments || attachments.length === 0){
+      bodyHtml = `<div class="mv-file-generic">
+        <div class="mv-file-generic-icon">📝</div>
+        <div style="font-size:13px;color:var(--muted2);max-width:440px;line-height:1.5">${escHtml(sig?.description || 'Nessun allegato per questo segnale.')}</div>
+      </div>`;
+    } else {
+      bodyHtml = attachments.map(a => {
+        const isImg = (a.media_type||'').startsWith('image/');
+        const dataUrl = `data:${a.media_type};base64,${a.data_base64}`;
+        if(isImg){
+          return `<img src="${dataUrl}" alt="${escHtml(a.filename)}" style="margin-bottom:12px">`;
+        }
+        return `<div class="mv-file-generic">
+          <div class="mv-file-generic-icon">📄</div>
+          <div style="font-size:13px">${escHtml(a.filename)}</div>
+          <a href="${dataUrl}" download="${escHtml(a.filename)}">⬇ Scarica file</a>
+        </div>`;
+      }).join('');
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'mv-modal-backdrop';
+    modal.id = 'mv-modal-backdrop';
+    modal.addEventListener('click', (e) => { if(e.target === modal) modal.remove(); });
+    modal.innerHTML = `
+      <div class="mv-modal">
+        <div class="mv-modal-hdr">
+          <span class="mv-modal-hdr-title">${escHtml(sig?.company_name || 'Allegato')}</span>
+          <button class="mv-modal-close" onclick="document.getElementById('mv-modal-backdrop').remove()">✕</button>
+        </div>
+        <div class="mv-modal-body">${bodyHtml}</div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+
   function renderManualField(label, name, value, type, options){
-    const v = escHtml(String(value || ''));
+    const v = escHtml(String(value ?? ''));
     if(type === 'textarea'){
       return `<div class="manual-field">
         <div class="manual-field-label">${label}</div>
@@ -2019,27 +2214,29 @@
     </div>`;
   }
 
-  function setManualType(t){
-    manualInputType = t;
-    if(t !== 'image'){ manualImageB64 = ''; }
-    renderManualView();
+  function fastApiErrorMessage(data, fallback){
+    const d = data && data.detail;
+    if(!d) return fallback;
+    if(typeof d === 'string') return d;
+    if(Array.isArray(d)) return d.map(e => (e && e.msg) ? e.msg : JSON.stringify(e)).join('; ');
+    return JSON.stringify(d);
   }
 
   async function analyzeManual(){
-    const textarea = document.getElementById('manual-textarea');
-    const text = textarea?.value?.trim() || '';
-    if(!text && !manualImageB64){ alert('Inserisci del testo, un link o una foto.'); return; }
+    const text = (manualTextValue||'').trim();
+    if(!text && manualPendingFiles.length===0){ alert('Inserisci del testo, un link o carica un file.'); return; }
 
+    const isUrl = /^https?:\/\//i.test(text) && manualPendingFiles.length===0;
     const btn = document.getElementById('manual-analyze-btn');
     btn.disabled = true;
+    const prevLabel = btn.textContent;
     btn.textContent = 'Analisi in corso…';
 
     try {
       const body = {
-        input_text:      manualInputType === 'image' ? '' : text,
-        input_type:      manualInputType,
-        image_base64:    manualImageB64,
-        image_media_type: manualImageType,
+        input_text:  text,
+        input_type:  isUrl ? 'url' : 'text',
+        attachments: manualPendingFiles.map(f => ({filename:f.filename, media_type:f.media_type, data_base64:f.data_base64})),
       };
       const r = await fetch(API + '/api/manual/analyze', {
         method: 'POST',
@@ -2047,12 +2244,12 @@
         body: JSON.stringify(body),
       });
       const data = await r.json();
-      if(!r.ok) throw new Error(data.detail || 'Errore server');
+      if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore server'));
       renderManualView(data.signal);
     } catch(e){
       alert('Errore durante l\'analisi: ' + e.message);
       btn.disabled = false;
-      btn.textContent = 'Analizza →';
+      btn.textContent = prevLabel;
     }
   }
 
@@ -2064,6 +2261,8 @@
       fields[el.name] = el.value;
     });
     fields.confidence = 0.95;
+    fields.budget_estimated = parseFloat(fields.budget_estimated) || 0;
+    fields.attachments = manualPendingFiles.map(f => ({filename:f.filename, media_type:f.media_type, data_base64:f.data_base64}));
     try {
       const r = await fetch(API + '/api/manual/confirm', {
         method: 'POST',
@@ -2071,13 +2270,14 @@
         body: JSON.stringify(fields),
       });
       const data = await r.json();
-      if(!r.ok) throw new Error(data.detail || 'Errore');
+      if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore'));
       // Show success
-      document.querySelector('.manual-preview').innerHTML =
-        '<div class="manual-success">✓ Segnale salvato con successo! (ID: '+data.signal_id+')<br><small style="color:var(--muted);font-size:12px">Comparirà nel feed entro pochi secondi.</small></div>';
-      manualImageB64 = '';
-      manualInputType = 'text';
-      setTimeout(() => loadManualPastSignals(), 500);
+      preview.innerHTML =
+        '<div class="manual-success">✓ Segnale salvato con successo! (ID: '+data.signal_id+')<br><small style="color:var(--muted);font-size:12px">Lo trovi nella scheda "Segnali".</small></div>';
+      manualPendingFiles = [];
+      manualTextValue    = '';
+      manualLastPreview  = null;
+      setTimeout(() => setManualTab('segnali'), 900);
     } catch(e){
       alert('Errore nel salvataggio: ' + e.message);
     }
