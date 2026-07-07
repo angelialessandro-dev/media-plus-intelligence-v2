@@ -655,6 +655,7 @@ class ManualConfirmRequest(BaseModel):
     source_category: str = "upload"
     confidence: float = 0.9
     input_text: str = ""
+    article_url: str = ""
     attachments: list[ManualAttachmentIn] = []
 
 
@@ -680,6 +681,7 @@ def manual_confirm(req: ManualConfirmRequest):
         ai_products     = req.ai_products,
         raw_excerpt     = req.input_text[:500],
         title           = req.title,
+        article_url     = req.article_url,
     )
 
     # Save attachments (images/files), if any, linked to the new signal

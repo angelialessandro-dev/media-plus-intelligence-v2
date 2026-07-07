@@ -686,7 +686,12 @@
       </span>` : '';
 
     let expandHtml = '';
-    if(s.description||s.ai_strategy||s.ai_products){
+    if(s.description||s.ai_strategy||s.ai_products||isManual){
+      const linkRow = (isManual && s.article_url) ? `<div class="expand-box" style="margin-top:8px">
+        <div class="expand-box-title">Link di origine</div>
+        <p><a href="${escHtml(s.article_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-weight:600" onclick="event.stopPropagation()">${escHtml(s.article_url)}</a></p>
+      </div>` : '';
+      const attachBox = isManual ? `<div class="expand-box mv-attach-box" id="sig-attach-box-${s.id}" style="display:none;margin-top:8px"></div>` : '';
       expandHtml = `<div class="sig-expand">
         <div class="expand-grid">
           <div class="expand-box">
@@ -702,10 +707,12 @@
           <div class="expand-box-title">Prodotti suggeriti dall'AI</div>
           <p>${escHtml(s.ai_products)}</p>
         </div>`:''}
+        ${linkRow}
+        ${attachBox}
       </div>`;
     }
 
-    return `<div class="signal-card" onclick="this.classList.toggle('open')">
+    return `<div class="signal-card" onclick="toggleSignalCard(this, ${s.id})">
       <div class="sig-top">
         <span class="${catCss}">${icon} ${catLabel}</span>
         ${srcBadge}
@@ -717,6 +724,33 @@
       <div class="sig-bottom"><span class="${urgCls}">● ${urgLabel}</span></div>
       ${expandHtml}
     </div>`;
+  }
+
+  async function toggleSignalCard(el, id){
+    const wasOpen = el.classList.contains('open');
+    el.classList.toggle('open');
+    if(wasOpen) return;
+    const box = document.getElementById(`sig-attach-box-${id}`);
+    if(!box || box.dataset.loaded === '1') return; // non-manuale, o già caricato
+    box.dataset.loaded = '1';
+    box.style.display = 'block';
+    box.innerHTML = '<div class="expand-box-title">Allegato</div><p>Caricamento...</p>';
+    try {
+      const r = await fetch(`${API}/api/signals/${id}/attachments`);
+      const data = await r.json();
+      const atts = data.attachments || [];
+      if(atts.length === 0){ box.style.display = 'none'; return; }
+      box.innerHTML = '<div class="expand-box-title">Allegato</div>' + atts.map(a => {
+        const isImg = (a.media_type||'').startsWith('image/');
+        const dataUrl = `data:${a.media_type};base64,${a.data_base64}`;
+        if(isImg){
+          return `<img src="${dataUrl}" alt="${escHtml(a.filename)}" style="max-width:100%;border-radius:8px;margin-top:6px;display:block">`;
+        }
+        return `<p><a href="${dataUrl}" download="${escHtml(a.filename)}" style="color:var(--accent);font-weight:600;text-decoration:none">📄 ${escHtml(a.filename)} — Scarica</a></p>`;
+      }).join('');
+    } catch(e){
+      box.innerHTML = '<div class="expand-box-title">Allegato</div><p>Errore nel caricamento.</p>';
+    }
   }
 
   function feedCompanyClick(name){
@@ -1965,7 +1999,7 @@
   let manualLastPreview = null;       // ultima proposta AI in sospeso (persiste tra i cambi tab)
   let manualPeriod      = '24h';
   let manualSort        = 'recente';
-  let manualSignalsCache = [];        // ultimo elenco caricato, per il click → preview allegato
+  let manualSignalsCache = [];        // ultimo elenco caricato (tenuto per eventuali usi futuri)
 
   function openManualView(){
     document.getElementById('source-header').style.display = 'none';
@@ -2168,79 +2202,10 @@
         el.innerHTML = '<div class="mv-empty">Nessun segnale in questo periodo.<br><small>Carica il tuo primo segnale dalla scheda "Upload".</small></div>';
         return;
       }
-      el.innerHTML = signals.map(s => renderManualSignalCard(s)).join('');
+      el.innerHTML = signals.map(renderSignalCard).join('');
     } catch(e){
       el.innerHTML = '<div class="mv-empty">Errore nel caricamento.</div>';
     }
-  }
-
-  function renderManualSignalCard(s){
-    const urgCls   = 'sig-badge '+(s.urgency||'media');
-    const urgLabel = URGENCY_MAP[s.urgency]||'Media urgenza';
-    return `<div class="signal-card" style="cursor:pointer" onclick="openManualSignalPreview(${s.id})">
-      <div class="sig-top">
-        <span class="sig-source upload">📄 UPLOAD</span>
-        <span class="sig-time">${timeAgo(s.detected_at)}</span>
-        <span class="sig-actions">
-          <span class="sig-icon-btn" title="Modifica segnale" onclick="event.stopPropagation();openEditSignalModal(${s.id})">✏️</span>
-          <span class="sig-icon-btn danger" title="Elimina segnale" onclick="event.stopPropagation();deleteManualSignal(${s.id})">🗑️</span>
-        </span>
-      </div>
-      <div class="sig-company">${escHtml(s.company_name)}</div>
-      <div class="sig-desc">${escHtml(s.description)}</div>
-      <div class="sig-bottom"><span class="${urgCls}">● ${urgLabel}</span></div>
-    </div>`;
-  }
-
-  async function openManualSignalPreview(id){
-    const sig = manualSignalsCache.find(s => s.id === id) || null;
-    let attachments = [];
-    try {
-      const r = await fetch(`${API}/api/signals/${id}/attachments`);
-      const data = await r.json();
-      attachments = data.attachments || [];
-    } catch(e){ /* nessun allegato disponibile */ }
-    showAttachmentModal(sig, attachments);
-  }
-
-  function showAttachmentModal(sig, attachments){
-    const existing = document.getElementById('mv-modal-backdrop');
-    if(existing) existing.remove();
-
-    let bodyHtml;
-    if(!attachments || attachments.length === 0){
-      bodyHtml = `<div class="mv-file-generic">
-        <div class="mv-file-generic-icon">📝</div>
-        <div style="font-size:13px;color:var(--muted2);max-width:440px;line-height:1.5">${escHtml(sig?.description || 'Nessun allegato per questo segnale.')}</div>
-      </div>`;
-    } else {
-      bodyHtml = attachments.map(a => {
-        const isImg = (a.media_type||'').startsWith('image/');
-        const dataUrl = `data:${a.media_type};base64,${a.data_base64}`;
-        if(isImg){
-          return `<img src="${dataUrl}" alt="${escHtml(a.filename)}" style="margin-bottom:12px">`;
-        }
-        return `<div class="mv-file-generic">
-          <div class="mv-file-generic-icon">📄</div>
-          <div style="font-size:13px">${escHtml(a.filename)}</div>
-          <a href="${dataUrl}" download="${escHtml(a.filename)}">⬇ Scarica file</a>
-        </div>`;
-      }).join('');
-    }
-
-    const modal = document.createElement('div');
-    modal.className = 'mv-modal-backdrop';
-    modal.id = 'mv-modal-backdrop';
-    modal.addEventListener('click', (e) => { if(e.target === modal) modal.remove(); });
-    modal.innerHTML = `
-      <div class="mv-modal">
-        <div class="mv-modal-hdr">
-          <span class="mv-modal-hdr-title">${escHtml(sig?.company_name || 'Allegato')}</span>
-          <button class="mv-modal-close" onclick="document.getElementById('mv-modal-backdrop').remove()">✕</button>
-        </div>
-        <div class="mv-modal-body">${bodyHtml}</div>
-      </div>`;
-    document.body.appendChild(modal);
   }
 
   // ── MODIFICA / ELIMINAZIONE SEGNALI MANUALI ───────────────────────
@@ -2416,6 +2381,7 @@
       });
       const data = await r.json();
       if(!r.ok) throw new Error(fastApiErrorMessage(data, 'Errore server'));
+      data.signal.article_url = isUrl ? text : '';
       renderManualView(data.signal);
     } catch(e){
       alert('Errore durante l\'analisi: ' + e.message);
@@ -2433,6 +2399,7 @@
     });
     fields.confidence = 0.95;
     fields.budget_estimated = parseFloat(fields.budget_estimated) || 0;
+    fields.article_url = manualLastPreview?.article_url || '';
     fields.attachments = manualPendingFiles.map(f => ({filename:f.filename, media_type:f.media_type, data_base64:f.data_base64}));
     try {
       const r = await fetch(API + '/api/manual/confirm', {
