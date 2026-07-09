@@ -187,8 +187,13 @@
   .search-res-type { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; padding: 6px 14px 4px; background: var(--bg); }
 
   /* ── TOPBAR ── */
-  .logo { font-weight: 700; font-size: 19px; letter-spacing: -.3px; color: var(--text); cursor: pointer; }
+  .logo { font-weight: 700; font-size: 19px; letter-spacing: -.3px; color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; }
   .logo span { color: var(--accent); }
+  .logo-dot { position: relative; width: 12px; height: 12px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+  .logo-dot::before { content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); opacity: .35; animation: logo-dot-pulse 1.8s ease-out infinite; }
+  .logo-dot::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  @keyframes logo-dot-pulse { 0% { transform: scale(1); opacity: .5; } 70% { transform: scale(2.4); opacity: 0; } 100% { transform: scale(2.4); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .logo-dot::before { animation: none; opacity: .3; } }
   .ticker-strip { flex: 1; display: flex; gap: 20px; overflow: hidden; }
   .tick { display: flex; align-items: center; gap: 6px; font-size: 11px; white-space: nowrap; }
   .tick-name { color: var(--muted2); font-weight: 500; }
@@ -363,7 +368,7 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="logo" id="main-logo" style="cursor:pointer">Media Plus <span>Intelligence</span></div>
+    <div class="logo" id="main-logo" style="cursor:pointer"><span class="logo-dot" aria-hidden="true"></span>Media Plus <span>Intelligence</span></div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:6px;position:relative" id="topbar-right">
       <div class="search-wrap" id="search-bar">
         <input type="text" id="search-input" class="search-input" placeholder="Cerca azienda, fonte…">
